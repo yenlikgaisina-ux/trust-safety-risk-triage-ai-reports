@@ -1,135 +1,385 @@
 # Responsible AI Safeguards
 
-**Project:** Trust & Safety Operations — AI User Report Triage
-**Version:** 1.0
-**Last Updated:** 2026-05-21
-**Owner:** Trust & Safety Operations / AI Governance
+## Project Context
 
----
+This responsible AI safeguards document is part of the portfolio project:
 
-## Overview
+AI Trust & Safety Operations Case Study: Risk Triage, Taxonomy Design and Escalation Workflow
 
-This document defines the responsible AI controls and governance mechanisms applied to the machine learning classifier at the core of the Trust & Safety triage pipeline. It covers model design principles, confidence thresholds, bias detection and mitigation, transparency obligations, human oversight integration, and incident response procedures.
+The project uses fully synthetic user reports to demonstrate how AI-assisted triage can support Trust & Safety operations while reducing risks linked to automation, bias, privacy, explainability, and unsafe decision-making.
 
-These safeguards reflect the organization's commitment to deploying AI in ways that are accurate, fair, transparent, and subject to meaningful human accountability. No AI model is treated as infallible; every design choice in this framework assumes the possibility of model error and creates structural protections against harm from that error.
+No real users, platforms, accounts, companies, or incidents are used in this project.
 
----
+## Purpose
 
-## 1. Model Governance Principles
+The purpose of this document is to define responsible AI safeguards for an AI-assisted Trust & Safety triage system.
 
-The AI triage classifier operates under five governing principles that inform every design, deployment, and monitoring decision.
+The system is designed to help organise and prioritise user reports. It should not replace human judgement in sensitive or high-impact decisions.
 
-**Accuracy before speed:** Minimizing false negatives (missed harmful content) takes precedence over throughput optimization. The model is tuned to prioritize recall in high-risk categories, accepting higher false positive rates in exchange for lower miss rates on T3 and T4 cases.
+Responsible AI safeguards are needed to make sure that:
 
-**Confidence transparency:** The model exposes a calibrated confidence score with every prediction. This score is surfaced to human analysts and drives automated routing logic. Predictions below defined confidence thresholds are never acted upon without human review.
+- high-risk cases are not missed
+- automation does not make final decisions in sensitive cases
+- users are not negatively affected by unexplained model outputs
+- synthetic data is clearly separated from real user data
+- privacy risks are reduced
+- human reviewers remain accountable for final outcomes
+- model performance is monitored over time
+- quality assurance findings are used to improve the workflow
 
-**Category-aware thresholds:** Confidence thresholds and escalation triggers are calibrated per risk category, not applied uniformly. Higher-stakes categories such as CSAM/CSEM and credible physical threats have more conservative thresholds and mandatory human review regardless of confidence.
+## Responsible AI Principles
 
-**Auditability by design:** All model inputs, outputs, confidence scores, routing decisions, and human overrides are logged immutably. This enables retrospective auditing, bias investigation, and retraining data quality assessment.
-
-**Human primacy:** The AI classifier is a decision-support tool. It does not make final enforcement decisions on any case involving potential serious harm. Human analysts retain unconditional override authority and bear accountability for all enforcement outcomes.
-
----
-
-## 2. Confidence Threshold Configuration
-
-Confidence thresholds determine when the AI may act autonomously and when human review is mandated. Thresholds are reviewed quarterly and adjusted based on precision/recall analysis and override rate data.
-
-| Risk Category | Auto-Disposition Threshold | Human Review Trigger | Mandatory Human Review |
-|---|---|---|---|
-| Harmful Content (T3/T4) | Never auto-disposed | < 0.85 routes to human queue | Always |
-| Harassment & Abuse (T2+) | N/A | < 0.85 | T3+ always |
-| Harassment & Abuse (T1) | 0.90 | < 0.90 | If confidence < 0.90 |
-| Misinformation & Manipulation (T2+) | N/A | < 0.85 | T3+ always |
-| Platform Integrity (T1) | 0.90 | < 0.90 | If confidence < 0.90 |
-| Regulatory & Legal Risk (T2+) | N/A | Any confidence | Always (legal exposure) |
-| CSAM/CSEM (any tier) | Never | Pre-screener flag | Always — immediate |
-
-**Threshold change control:** Any change to confidence thresholds requires sign-off from the Head of Trust & Safety, the AI Governance Lead, and Legal Counsel. Changes are logged in the model version history and take effect only after a minimum 2-week shadow-mode validation period.
-
----
-
-## 3. Bias Detection and Mitigation
-
-### 3.1 Known Bias Risks
-
-Content moderation AI systems are susceptible to several categories of bias that can result in disparate enforcement outcomes. Training data bias occurs when historical enforcement decisions reflect human biases, and those patterns are amplified by a model trained on that data. Language and dialect bias can cause the model to underperform on non-standard dialects, code-switching, or non-English content. Context collapse occurs when the model evaluates content without full contextual understanding of cultural norms, in-group language, or satirical intent. Label bias can arise when training labels were applied inconsistently by human labelers across time periods or labeler demographics.
-
-### 3.2 Bias Monitoring Metrics
-
-The following metrics are tracked on a rolling 30-day basis and reviewed monthly by the AI Governance Lead:
-
-| Metric | Definition | Alert Threshold |
-|---|---|---|
-| Demographic parity gap | Difference in false positive rate across demographic groups (estimated via proxy signals) | > 5 percentage points |
-| Language performance gap | Difference in precision/recall between English and non-English content | > 10 percentage points |
-| Override rate disparity | Difference in analyst override rate between demographic groups of reported users | > 5 percentage points |
-| Label consistency score | Inter-annotator agreement rate on training labels | < 85% |
-| Dialect misclassification rate | Rate at which non-standard dialect content is over-classified vs. comparable standard English content | > 5 percentage points |
-
-### 3.3 Bias Mitigation Controls
-
-When a bias alert threshold is breached, the affected risk category or language is flagged for mandatory human review until the bias is remediated, a root cause analysis is initiated within 5 business days, retraining data is augmented with additional examples from underrepresented groups or languages, training labels for the affected category are re-audited by a diverse labeling team, and a post-remediation bias audit is conducted before returning the category to automated disposition.
-
----
-
-## 4. Model Transparency and Explainability
-
-### 4.1 Analyst-Facing Explainability
-
-Human analysts reviewing AI-classified cases have access to the following explanation artifacts in the case management system: a calibrated confidence score (0.00 to 1.00) for the top predicted category, the 3 to 5 most influential content features or metadata signals driving the prediction expressed in plain-language descriptions, the second and third most probable categories with their confidence scores to enable evaluation of competing interpretations, and links to 3 recently closed cases with the same classification for calibration reference.
-
-### 4.2 External Transparency Commitments
-
-The organization publishes an annual AI Transparency Report covering total volume of AI-assisted and AI-autonomous enforcement decisions, AI override rates by risk category, bias audit findings and remediation actions taken, model performance metrics including aggregate precision, recall, and F1 by category, and a description of safeguards in place and any material changes made during the year.
-
-The Transparency Report does not disclose information that would enable adversarial gaming of the classifier, such as specific threshold values or detailed signal descriptions.
-
----
-
-## 5. Model Lifecycle Management
-
-### 5.1 Training Data Governance
-
-Training data for the classifier is sourced exclusively from historical cases that have received a final human-reviewed enforcement decision. Requirements include human-reviewed ground truth labels only with no AI-generated labels used as training data, a minimum 6-month aging period before inclusion in training sets to allow for appeal resolutions and label corrections, demographic and linguistic diversity audits before each retraining cycle, and labeler quality controls including inter-annotator agreement requirements.
-
-### 5.2 Retraining Triggers
-
-Model retraining is triggered when the analyst override rate exceeds 10% for any category over a 30-day rolling window, when any bias alert threshold is breached, when a new risk sub-category is added to the taxonomy, when precision or recall for any T3/T4 category falls below 0.90, or at the quarterly scheduled retraining cycle.
-
-### 5.3 Model Versioning and Rollback
-
-Every model version is tagged with a semantic version number, training data snapshot hash, evaluation metrics, and deployment date. The prior model version is retained in a deployable state for a minimum of 90 days following any new deployment. Rollback to a prior version can be executed within 2 hours of a decision by the Head of Trust & Safety and AI Governance Lead in response to a critical model failure event.
-
----
-
-## 6. Incident Response
-
-A model incident is defined as any event in which the AI classifier's behavior causes or materially contributes to an enforcement error resulting in user harm, regulatory exposure, or reputational risk.
-
-| Level | Definition | Response Time |
-|---|---|---|
-| P1 — Critical | CSAM not detected; credible threat missed; mass enforcement error affecting 1,000+ accounts | Immediate (1 hour) |
-| P2 — High | Systematic false positives/negatives in a specific category; bias threshold breach | 4 hours |
-| P3 — Medium | Individual high-profile enforcement error; confidence threshold misconfiguration | 24 hours |
-| P4 — Low | Isolated classification error caught by QA; documentation discrepancy | 72 hours |
-
-Upon declaration of a P1 incident, the affected model category is immediately switched to mandatory human review for all cases, the Head of Trust & Safety, Legal Counsel, and AI Governance Lead are notified within 30 minutes, a post-incident review is scheduled within 48 hours, and a public-facing incident statement is prepared in coordination with Communications if user impact is material.
-
----
-
-## 7. Third-Party and Vendor AI Controls
-
-If any component of the triage pipeline incorporates third-party or vendor-supplied AI models, the vendor must provide model performance documentation including precision/recall metrics on relevant content types, must disclose training data sources and confirm absence of data sourced from this platform's user data without explicit consent, must commit contractually to bias auditing and transparency reporting, and their models are subject to the same override, logging, and incident response requirements as first-party models. An annual vendor AI review is conducted by the AI Governance Lead.
-
----
-
-## Cross-Reference
-
-| Document | Purpose |
+| Principle | Meaning in This Project |
 |---|---|
-| `docs/risk_taxonomy.md` | Category definitions that frame model classification targets |
-| `docs/escalation_decision_tree.md` | Confidence threshold logic and routing decisions |
-| `docs/qa_checklist.md` | QA bias checks in Section 5 |
-| `docs/human_in_the_loop_process.md` | Human oversight integration with model governance |
-| `docs/data_dictionary.md` | Field definitions for model_confidence_score, routing_reason_code, and audit log fields |
+| Human oversight | Humans review high-risk, sensitive, ambiguous, and low-confidence cases. |
+| Safety first | Potential harm is escalated cautiously, especially in child safety, self-harm, fraud, and privacy cases. |
+| Explainability | Model predictions should be understandable to reviewers. |
+| Accountability | Final decisions should have a clear owner and documented rationale. |
+| Privacy protection | No real personal data should be used in the synthetic dataset. |
+| Fairness | The system should be monitored for inconsistent performance across categories and regions. |
+| Proportionality | Actions should match the severity and evidence in the ticket. |
+| Auditability | Decisions, overrides, and quality outcomes should be recorded. |
+| Continuous improvement | Human feedback and QA findings should improve the taxonomy, workflow, and model. |
+
+## AI System Role
+
+In this project, AI is used as a support tool.
+
+The AI system may help with:
+
+| AI-Assisted Task | Purpose |
+|---|---|
+| Ticket classification | Suggest a risk category and subcategory. |
+| Severity prediction | Estimate urgency level. |
+| SLA mapping | Suggest response target based on severity. |
+| Escalation routing | Recommend the appropriate review team. |
+| Ticket summarisation | Create a concise summary for reviewers. |
+| Pattern detection | Identify trends in risk categories and severity. |
+| Dashboard preparation | Support structured reporting and analytics. |
+
+The AI system should not independently make final decisions in high-impact cases.
+
+## Decisions That Must Not Be Fully Automated
+
+The following decisions require human review:
+
+| Decision Type | Why Human Review Is Required |
+|---|---|
+| Critical severity classification | Immediate or severe harm risk requires human judgement. |
+| Child safety escalation | Cases involving minors require specialist review. |
+| Self-harm or crisis concern | Sensitive safety cases require careful human assessment. |
+| Fraud or scam investigation | Financial harm and deception require contextual review. |
+| Account compromise | Account access decisions may significantly affect users. |
+| Personal data exposure | Privacy risks require careful handling. |
+| Credible threats | Threat assessment requires context and judgement. |
+| Serious enforcement appeal | Fairness and user impact require human oversight. |
+| Low-confidence model predictions | Uncertain automation should not be trusted alone. |
+| Ambiguous multi-risk cases | A human should decide the highest-risk signal. |
+
+## Human Oversight Safeguards
+
+| Safeguard | Description |
+|---|---|
+| Mandatory review for High and Critical tickets | Prevents serious cases from being handled only by automation. |
+| Human review for model confidence below 0.75 | Captures cases where the model is uncertain. |
+| Specialist escalation paths | Sends sensitive tickets to appropriate teams. |
+| Human override logging | Records where reviewers disagree with the model. |
+| Reviewer rationale requirement | Ensures decisions can be explained later. |
+| QA sampling | Checks whether decisions are accurate and consistent. |
+| Escalation audit trail | Maintains a record of category, severity, routing, and final action. |
+
+## Model Confidence Safeguards
+
+Model confidence should be treated as a decision-support signal, not proof that the model is correct.
+
+| Confidence Score | Recommended Handling |
+|---:|---|
+| 0.90 to 1.00 | Can support low-risk routing if no sensitive risk is detected. |
+| 0.75 to 0.89 | Acceptable for low-risk assistance but still review sensitive cases. |
+| 0.50 to 0.74 | Human review required. |
+| Below 0.50 | Human review required; model output should be treated as unreliable. |
+
+Important rule:
+
+High confidence should never bypass human review for High, Critical, child safety, self-harm, privacy, fraud, or serious enforcement cases.
+
+## Privacy Safeguards
+
+This project uses synthetic data only.
+
+Privacy safeguards include:
+
+| Safeguard | Purpose |
+|---|---|
+| No real user data | Prevents exposure of real personal information. |
+| No real platform names | Avoids misrepresenting real companies or systems. |
+| No real account details | Prevents accidental identification. |
+| No real incident descriptions | Keeps the project educational and safe. |
+| Synthetic ticket IDs | Avoids linking records to real users. |
+| Fictional reports only | Demonstrates workflow without using sensitive data. |
+| Clear dataset labelling | Makes it obvious that the data is synthetic. |
+
+## Data Minimisation
+
+The synthetic dataset should include only fields needed for the portfolio analysis.
+
+Recommended included fields:
+
+| Field | Reason for Inclusion |
+|---|---|
+| ticket_id | Enables tracking and analysis. |
+| created_at | Supports trend and SLA analysis. |
+| user_report | Provides text for classification. |
+| risk_category | Supports taxonomy and analytics. |
+| subcategory | Enables more detailed analysis. |
+| severity | Supports prioritisation. |
+| sla_target_hours | Supports operational performance analysis. |
+| escalation_team | Supports routing analysis. |
+| model_confidence | Supports automation governance. |
+| human_review_required | Supports human-in-the-loop analysis. |
+| final_action | Supports workflow outcome analysis. |
+
+Fields that should not be included:
+
+| Excluded Field | Reason |
+|---|---|
+| Real names | Not needed and creates privacy risk. |
+| Real emails | Not needed and creates privacy risk. |
+| Real phone numbers | Not needed and creates privacy risk. |
+| Real addresses | Not needed and creates privacy risk. |
+| Real account IDs | Not needed and creates privacy risk. |
+| Real platform identifiers | Not needed and may misrepresent real systems. |
+| Real payment details | Not needed and creates financial data risk. |
+
+## Bias and Fairness Safeguards
+
+Even synthetic datasets can accidentally create unrealistic or unfair patterns.
+
+The project should monitor for:
+
+| Risk | Example | Safeguard |
+|---|---|---|
+| Category imbalance | Too many fraud tickets and too few privacy tickets. | Check category distribution. |
+| Severity imbalance | Most tickets labelled High. | Review severity distribution. |
+| Regional bias | One region associated with more severe reports. | Use balanced synthetic region assignment. |
+| Language bias | Non-English tickets always classified as higher risk. | Review performance by language. |
+| Keyword bias | Certain words cause over-escalation. | Use QA review and model error analysis. |
+| Under-detection | Sensitive categories missed due to vague wording. | Use human review and safety keyword checks. |
+
+## Explainability Safeguards
+
+Reviewers should understand why a ticket was classified in a particular way.
+
+Useful explainability features:
+
+| Feature | Purpose |
+|---|---|
+| Predicted category | Shows the model recommendation. |
+| Confidence score | Shows how certain the model is. |
+| Key terms or signals | Helps reviewer understand the prediction. |
+| Rule-based escalation reason | Explains why severity or team was assigned. |
+| Human reviewer notes | Records final rationale. |
+| Override reason | Documents disagreement between model and reviewer. |
+
+A model output should not be accepted simply because it appears confident.
+
+## Safety Safeguards
+
+The system should prioritise user safety over speed or automation efficiency.
+
+| Safety Risk | Safeguard |
+|---|---|
+| Child safety concern missed | Any minor-related signal routes to Critical and specialist review. |
+| Self-harm concern missed | Crisis or self-harm language routes to human review. |
+| Fraud under-classified | Financial harm or impersonation routes to High severity. |
+| Privacy exposure delayed | Personal data exposure routes to Privacy Review. |
+| Threat treated as low risk | Credible threat language routes to Trust & Safety Review. |
+| Ambiguous harm ignored | Ambiguous cases receive severity floor and human review. |
+
+## Misclassification Controls
+
+The workflow should reduce the risk of incorrect classification.
+
+| Control | Description |
+|---|---|
+| Taxonomy definitions | Provides clear category boundaries. |
+| Severity assignment rules | Reduces inconsistent urgency decisions. |
+| Escalation decision tree | Provides structured routing logic. |
+| QA checklist | Detects category, severity, and routing errors. |
+| Human review queue | Captures uncertain or sensitive cases. |
+| Override tracking | Identifies where model predictions fail. |
+| Model performance review | Monitors accuracy and false negatives. |
+
+## False Negative Risk
+
+False negatives are especially important in Trust & Safety because they can allow harmful cases to remain unresolved.
+
+Examples of high-risk false negatives:
+
+| False Negative | Potential Harm |
+|---|---|
+| Child safety concern classified as policy confusion | Urgent safety issue may be delayed. |
+| Self-harm concern classified as low-risk support | Crisis response may be missed. |
+| Fraud report classified as billing question | Financial harm may continue. |
+| Privacy exposure classified as general complaint | Personal data may remain exposed. |
+| Threat classified as harassment only | Severity may be too low. |
+
+False negatives in safety-critical categories should be reviewed with extra care.
+
+## False Positive Risk
+
+False positives also matter because over-escalation can create operational burden and unfair outcomes.
+
+Examples:
+
+| False Positive | Potential Harm |
+|---|---|
+| Policy confusion classified as fraud | Unnecessary specialist workload. |
+| Low-risk disagreement classified as harassment | Over-enforcement risk. |
+| General health discussion classified as misinformation | Unfair moderation risk. |
+| Simple account issue classified as account compromise | Unnecessary escalation. |
+
+The goal is not only to catch more risk, but to route cases proportionately.
+
+## Human Override Safeguards
+
+Human overrides should be recorded and analysed.
+
+| Override Field | Purpose |
+|---|---|
+| original_model_category | Shows the model prediction. |
+| final_human_category | Shows corrected category. |
+| original_model_severity | Shows model severity. |
+| final_human_severity | Shows corrected severity. |
+| override_reason | Explains why the human changed the decision. |
+| reviewer_id | Supports accountability in a production system. |
+| review_date | Supports audit and trend analysis. |
+| qa_flag | Marks tickets for further quality review. |
+
+In this portfolio project, reviewer IDs should be fictional or omitted.
+
+## Auditability Safeguards
+
+A safe workflow should leave a clear audit trail.
+
+Each ticket should ideally record:
+
+| Audit Field | Purpose |
+|---|---|
+| ticket_id | Unique reference. |
+| model_prediction | Shows automated recommendation. |
+| model_confidence | Shows uncertainty level. |
+| human_review_required | Shows whether manual review was required. |
+| human_decision | Shows final human outcome where applicable. |
+| escalation_team | Shows routing path. |
+| sla_target_hours | Shows expected response time. |
+| final_action | Shows outcome. |
+| qa_outcome | Shows quality review result. |
+| override_reason | Shows reason for disagreement with model. |
+
+## QA and Monitoring Safeguards
+
+Responsible AI requires ongoing monitoring.
+
+Recommended monitoring metrics:
+
+| Metric | Purpose |
+|---|---|
+| Category accuracy | Measures whether tickets are classified correctly. |
+| Severity accuracy | Measures whether urgency is assigned correctly. |
+| False negative rate | Identifies missed risks. |
+| False positive rate | Identifies over-escalation. |
+| Human override rate | Shows model-reviewer disagreement. |
+| Low-confidence review rate | Confirms uncertain cases are reviewed. |
+| SLA compliance rate | Measures operational responsiveness. |
+| Critical case response time | Monitors urgent safety handling. |
+| QA pass rate | Measures decision quality. |
+| Error rate by category | Identifies weak areas in taxonomy or model. |
+
+## Model Evaluation Safeguards
+
+The classifier should be evaluated beyond overall accuracy.
+
+Useful evaluation views:
+
+| Evaluation View | Why It Matters |
+|---|---|
+| Accuracy by risk category | Reveals categories the model struggles with. |
+| Precision by category | Shows whether the model over-predicts a category. |
+| Recall by category | Shows whether the model misses a category. |
+| Confusion matrix | Shows which categories are confused with each other. |
+| Error review | Helps identify taxonomy or training data issues. |
+| Confidence calibration | Checks whether confidence scores are meaningful. |
+| High-risk false negative review | Focuses on the most harmful errors. |
+
+For this project, recall for sensitive categories is especially important.
+
+## Responsible Use of Synthetic Data
+
+Synthetic data is useful for portfolio work because it avoids using real user reports.
+
+However, synthetic data also has limits.
+
+| Benefit | Limitation |
+|---|---|
+| Avoids real personal data | May not reflect real-world complexity. |
+| Allows safe public sharing | May contain simplified patterns. |
+| Supports reproducibility | Model performance may look better than in production. |
+| Good for demonstrating workflow | Not suitable for real-world deployment without validation. |
+
+The README and project documentation should clearly state that all data is synthetic.
+
+## Limitations
+
+This project does not claim to be a production-ready Trust & Safety system.
+
+Limitations include:
+
+- synthetic data may not capture real-world ambiguity
+- model performance on synthetic reports may not generalise
+- no real policy enforcement is involved
+- no real user harm assessment is performed
+- no legal or regulatory assessment is included
+- no live moderation system is connected
+- no production privacy review is included
+- no specialist child safety or crisis response review is included
+
+These limitations should be clearly disclosed in the README and final report.
+
+## Responsible AI Checklist
+
+Use this checklist before publishing the project.
+
+| Check | Status |
+|---|---|
+| Dataset is fully synthetic. |  |
+| No real names, emails, phone numbers, or addresses are included. |  |
+| No real platforms or companies are named in the ticket data. |  |
+| High and Critical cases require human review. |  |
+| Child safety cases require specialist escalation. |  |
+| Self-harm and crisis cases require human review. |  |
+| Low-confidence model predictions require human review. |  |
+| Model confidence is used cautiously. |  |
+| Human overrides are recorded. |  |
+| QA checklist is included. |  |
+| Limitations are clearly stated. |  |
+| Project is labelled as educational and portfolio-based. |  |
+
+## Portfolio Relevance
+
+This document demonstrates skills relevant to:
+
+- responsible AI design
+- AI governance
+- human-in-the-loop workflows
+- Trust & Safety operations
+- risk management
+- privacy-aware project design
+- model monitoring
+- quality assurance
+- escalation governance
+- ethical use of synthetic data
+
+## Notes
+
+This document is for portfolio and educational purposes only. It is not a production safety policy, legal framework, privacy policy, or operational Trust & Safety procedure. A real-world system would require expert policy review, privacy assessment, legal review, specialist safety input, and ongoing governance.
