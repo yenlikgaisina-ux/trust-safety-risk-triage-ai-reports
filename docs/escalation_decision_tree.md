@@ -1,224 +1,390 @@
 # Escalation Decision Tree
 
-**Project:** Trust & Safety Operations — AI User Report Triage  
-**Version:** 1.0  
-**Last Updated:** 2026-05-21  
-**Owner:** Trust & Safety Operations
+## Project Context
 
----
+This escalation decision tree is part of the portfolio project:
 
-## Overview
+AI Trust & Safety Operations Case Study: Risk Triage, Taxonomy Design and Escalation Workflow
 
-This document defines the structured decision logic used to route, prioritize, and escalate incoming user reports through the AI-assisted triage pipeline. The decision tree is applied sequentially after initial AI classification. Outputs from this process determine queue assignment, SLA clock start, and whether human review is triggered immediately or deferred.
+The purpose of this document is to show how incoming user reports can be routed from initial intake to the correct severity level, escalation team, SLA target, and review process.
 
-All routing decisions are logged with a `routing_reason_code` to support quality assurance, auditing, and model retraining pipelines.
+The project uses fully synthetic user reports only. No real users, real platforms, real accounts, or real incidents are included.
 
----
+## Purpose
 
-## Stage 1 — Intake & Automated Pre-Screening
+A Trust & Safety triage system needs clear routing logic so that urgent and high-risk reports are identified quickly and handled by the right team.
 
-Every inbound report enters the pipeline at this stage. The AI pre-screening model evaluates a set of hard-coded trigger conditions before any classifier inference is run.
+This decision tree helps convert unstructured user reports into operational decisions, including:
 
-```
-REPORT RECEIVED
-     │
-     ▼
-[1.1] Does the report contain any CSAM/CSEM keyword signals or hash-match hits?
-     │
-     ├── YES ──► FLAG: CSAM_IMMEDIATE
-     │            └── Route to: CSAM Specialist Queue (T4 — 1-hour SLA)
-     │                Human review: MANDATORY within 30 minutes
-     │                Notify: Legal, Head of T&S, on-call Safety Lead
-     │
-     └── NO  ──► Continue to Stage 2
-```
+- risk severity
+- escalation team
+- SLA target
+- human review requirement
+- final action pathway
+- quality assurance flagging
 
-**Note:** CSAM/CSEM pre-screening runs on every report regardless of submitted category. Hash-matching uses PhotoDNA-equivalent perceptual hashing; keyword matching uses a maintained sensitive-term lexicon reviewed monthly.
+The decision tree is designed to be simple enough for a reviewer to apply quickly, while still supporting automation and analytics.
 
----
+## How to Use This Decision Tree
 
-## Stage 2 — AI Severity Classification
+For each incoming report:
 
-The primary classifier assigns a risk category and severity tier (T1–T4) based on report content, metadata, and reporter history. This output drives all downstream routing.
+1. Read the full user report.
+2. Check for immediate safety risks first.
+3. Check whether a minor may be involved.
+4. Check for fraud, account abuse, privacy, harassment, misinformation, or policy confusion.
+5. Assign the highest applicable severity.
+6. Route the case to the correct escalation team.
+7. Mark whether human review is required.
+8. Apply the correct SLA target.
+9. Record the final action.
 
-```
-     │
-     ▼
-[2.1] AI Classifier Output — Severity Tier Assignment
-     │
-     ├── T4 (Critical) ──► Route to: Crisis Response Queue
-     │                      Human review: MANDATORY — Senior Analyst or above
-     │                      SLA: 1 hour from report submission
-     │                      Parallel action: Notify on-call T&S Lead + Legal
-     │
-     ├── T3 (High)     ──► Route to: Priority Review Queue
-     │                      Human review: MANDATORY
-     │                      SLA: 4 hours from report submission
-     │                      Continue to Stage 3 (Confidence Check)
-     │
-     ├── T2 (Medium)   ──► Route to: Standard Review Queue
-     │                      Human review: Recommended (see Stage 3)
-     │                      SLA: 24 hours from report submission
-     │                      Continue to Stage 3 (Confidence Check)
-     │
-     └── T1 (Low)      ──► Route to: Automated Disposition Queue
-                           Human review: Not required (AI may close)
-                           SLA: 72 hours from report submission
-                           Continue to Stage 4 (AI Auto-Disposition)
-```
+If a case fits multiple categories, route it according to the highest-risk signal.
 
----
+## Step 1: Check for Immediate Safety Risk
 
-## Stage 3 — Confidence Threshold & Override Logic
+Ask: Does the report suggest immediate risk of harm to the user or another person?
 
-For T2 and T3 reports, the classifier confidence score determines whether the AI recommendation is accepted or overridden for mandatory human review.
+Examples:
 
-```
-     │ (T2 or T3 reports)
-     ▼
-[3.1] AI Model Confidence Score ≥ 0.85?
-     │
-     ├── YES ──► [3.2] Check: Is this the reported user's 3rd+ offense in 90 days?
-     │                │
-     │                ├── YES ──► Escalate to T3 regardless of original tier
-     │                │           Route to: Priority Review Queue
-     │                │           Flag: REPEAT_OFFENDER
-     │                │
-     │                └── NO  ──► Accept AI tier classification
-     │                            Route per Stage 2 assignment
-     │
-     └── NO  ──► Confidence below threshold — mandatory human review
-                 Route to: Human Review Queue (tier retained)
-                 Flag: LOW_CONFIDENCE_OVERRIDE
-                 Analyst must validate or override AI classification
-```
+- self-harm or crisis language
+- credible threat of violence
+- urgent fear for someone's safety
+- report suggesting imminent danger
+- severe distress requiring urgent escalation
 
----
+| Answer | Action |
+|---|---|
+| Yes | Assign Critical severity and route to Trust & Safety Specialist |
+| No | Continue to Step 2 |
 
-## Stage 4 — AI Auto-Disposition (T1 Only)
+Default SLA: 1 hour. Human review: Required.
 
-T1 reports with high model confidence may be automatically closed by the AI without human review, subject to the following safety checks.
+## Step 2: Check Whether a Minor May Be Involved
 
-```
-     │ (T1 reports only)
-     ▼
-[4.1] Is the reporter's account flagged as a trusted reporter or verified organization?
-     │
-     ├── YES ──► Elevate to T2 — route to Standard Review Queue
-     │           (Trusted reporters have elevated signal weight)
-     │
-     └── NO  ──► [4.2] Has this exact content hash been actioned before (known-bad signal)?
-                 │
-                 ├── YES ──► Auto-action: apply prior enforcement decision
-                 │           Log: AUTO_DISPOSITION_KNOWN_SIGNAL
-                 │
-                 └── NO  ──► [4.3] AI Confidence Score ≥ 0.90?
-                             │
-                             ├── YES ──► Auto-close with AI recommendation
-                             │           Log: AUTO_DISPOSITION_HIGH_CONFIDENCE
-                             │           QA sample: 5% of auto-closed T1 cases reviewed weekly
-                             │
-                             └── NO  ──► Route to Human Review Queue
-                                         Flag: T1_CONFIDENCE_INSUFFICIENT
-```
+Ask: Does the report involve a child, teenager, younger sibling, student, or anyone who may be under 18?
 
----
+Examples:
 
-## Stage 5 — Human Analyst Review
+- suspicious adult contact with a minor
+- age-inappropriate content shown to a minor
+- minor privacy concern
+- suspected grooming signal
+- report from a parent, sibling, teacher, or guardian
 
-Reports routed to human review queues follow this structured review process.
+| Answer | Action |
+|---|---|
+| Yes | Assign Critical severity and route to Child Safety Escalation |
+| No | Continue to Step 3 |
 
-```
-     │ (Human review queue)
-     ▼
-[5.1] Analyst reviews report content, AI classification, and account history
-     │
-     ▼
-[5.2] Does the analyst agree with the AI severity classification?
-     │
-     ├── YES ──► Proceed to enforcement action per policy
-     │           Log: ANALYST_CONFIRMED
-     │
-     └── NO  ──► [5.3] Analyst override — reclassify severity
-                 │
-                 ├── Upgrade (e.g., T2 → T3) ──► Re-route to higher-tier queue
-                 │                                 Log: ANALYST_UPGRADE
-                 │                                 Notify: Tier Lead if T3 → T4
-                 │
-                 └── Downgrade (e.g., T3 → T2) ──► Re-route to standard queue
-                                                    Log: ANALYST_DOWNGRADE
-                                                    Required: written justification
-```
+Default SLA: 1 hour. Human review: Required.
 
-**QA Flag:** Override rates exceeding 15% for any analyst in a given week trigger a calibration review with the QA Lead.
+Rule: Any case involving a minor should be treated as Critical until reviewed by a trained specialist.
 
----
+## Step 3: Check for Fraud, Scam, or Account Compromise
 
-## Stage 6 — Enforcement Action & Case Closure
+Ask: Does the report involve financial manipulation, impersonation, suspicious payments, phishing, or account takeover?
 
-Following human or AI disposition, the enforcement action is applied and the case is closed.
+Examples:
 
-```
-     │
-     ▼
-[6.1] Enforcement Action Applied
-     │
-     ├── Content Removed
-     ├── Account Warning Issued
-     ├── Account Suspended (temporary)
-     ├── Account Terminated (permanent)
-     ├── Report Dismissed (no violation found)
-     ├── Referred to Law Enforcement
-     └── Escalated to Legal / External Compliance
-     │
-     ▼
-[6.2] Case Closed — record outcome in case management system
-     │
-     └── [6.3] Post-action: Was reported user previously actioned within 30 days?
-                 │
-                 ├── YES ──► Flag account for Enhanced Monitoring
-                 │           Set: WATCH_LIST = TRUE
-                 │
-                 └── NO  ──► Standard case closure
-                             No additional monitoring required
-```
+- user asked to pay outside the platform
+- suspicious charge
+- account accessed without permission
+- password changed unexpectedly
+- impersonation of another user or organisation
+- fake investment opportunity
+- phishing link
+- coercive payment request
 
----
+| Answer | Action |
+|---|---|
+| Yes | Assign High severity and route to Fraud and Account Integrity |
+| No | Continue to Step 4 |
 
-## Routing Summary Matrix
+Default SLA: 4 hours. Human review: Required.
 
-| Severity Tier | AI Confidence | Condition | Assigned Queue | Human Review |
+Severity note: If the fraud report also includes immediate safety risk, threats, or a minor, upgrade to Critical.
+
+## Step 4: Check for Privacy Risk
+
+Ask: Does the report involve personal data exposure, unauthorised sharing, doxxing, or deletion-related risk?
+
+Examples:
+
+- phone number posted publicly
+- home address exposed
+- private image or document shared without consent
+- user requests removal of personal data
+- visibility setting exposed information unexpectedly
+- doxxing concern
+
+| Answer | Action |
+|---|---|
+| Yes, clear exposure | Assign High severity and route to Privacy Review |
+| Yes, unclear exposure | Assign Medium severity and route to Privacy Review |
+| No | Continue to Step 5 |
+
+| Severity | SLA |
+|---|---|
+| High | 4 hours |
+| Medium | 24 hours |
+
+Human review: Usually required.
+
+## Step 5: Check for Harassment, Threats, or Targeted Abuse
+
+Ask: Does the report involve abusive behaviour, repeated unwanted contact, targeted insults, intimidation, hate-directed abuse, or threats?
+
+Examples:
+
+- repeated unwanted messages
+- targeted insults
+- threatening language
+- sexual harassment
+- intimidation
+- hate-directed abuse
+- coordinated harassment
+
+| Answer | Action |
+|---|---|
+| Yes, credible threat or severe abuse | Assign High severity and route to Trust & Safety Review |
+| Yes, repeated or targeted abuse | Assign Medium severity and route to Trust & Safety Review |
+| No | Continue to Step 6 |
+
+| Severity | SLA |
+|---|---|
+| High | 4 hours |
+| Medium | 24 hours |
+
+Human review: Required for threats, repeated abuse, or hate-directed abuse.
+
+## Step 6: Check for Harmful Misinformation
+
+Ask: Does the report involve false, misleading, or potentially harmful claims?
+
+Examples:
+
+- dangerous health advice
+- unsafe instructions
+- manipulated media
+- misleading safety information
+- false claim likely to cause real-world harm
+
+| Answer | Action |
+|---|---|
+| Yes, high harm potential | Assign High severity and route to Policy Review |
+| Yes, limited or unclear harm potential | Assign Medium severity and route to Policy Review |
+| No | Continue to Step 7 |
+
+| Severity | SLA |
+|---|---|
+| High | 4 hours |
+| Medium | 24 hours |
+
+Human review: Required when harm potential is high or policy interpretation is needed.
+
+## Step 7: Check for Policy Confusion or Appeal
+
+Ask: Is the user mainly asking for clarification about a policy, moderation action, feature restriction, or account decision?
+
+Examples:
+
+- user asks why content was removed
+- user asks why account access was restricted
+- user wants to appeal an action
+- user does not understand a platform rule
+- user asks what policy was violated
+
+| Answer | Action |
+|---|---|
+| Simple policy question | Assign Low severity and route to Support / Education |
+| Appeal or unclear policy impact | Assign Medium severity and route to Policy Review |
+| No | Continue to Step 8 |
+
+| Severity | SLA |
+|---|---|
+| Medium | 24 hours |
+| Low | 72 hours |
+
+Human review: Required for serious appeals or unclear enforcement decisions.
+
+## Step 8: Check for Low Confidence or Ambiguity
+
+Ask: Is the category unclear, is the model confidence low, or does the ticket contain multiple possible risks?
+
+Examples:
+
+- vague report
+- incomplete evidence
+- multiple risk categories
+- model confidence below 0.75
+- classifier prediction conflicts with rule-based severity logic
+- user report contains unclear emotional or safety language
+
+| Answer | Action |
+|---|---|
+| Yes | Route to Human Review Queue |
+| No | Continue to standard support handling |
+
+| Possible Harm Level | Severity Floor | SLA |
+|---|---|---|
+| No clear harm | Low | 72 hours |
+| Possible harm | Medium | 24 hours |
+| Clear harm | High | 4 hours |
+| Immediate or severe harm | Critical | 1 hour |
+
+## Escalation Routing Summary
+
+| Risk Signal | Severity | Escalation Team | SLA | Human Review |
 |---|---|---|---|---|
-| T4 (Critical) | Any | Any | Crisis Response | Mandatory — Senior |
-| T3 (High) | ≥ 0.85 | No repeat offense | Priority Review | Mandatory |
-| T3 (High) | < 0.85 | Any | Human Review | Mandatory |
-| T2 (Medium) | ≥ 0.85 | No repeat offense | Standard Review | Recommended |
-| T2 (Medium) | < 0.85 | Any | Human Review | Mandatory |
-| T1 (Low) | ≥ 0.90 | No trusted reporter | Automated Disposition | No |
-| T1 (Low) | < 0.90 | Any | Human Review | Mandatory |
-| Any | Any | CSAM/CSEM signal | CSAM Specialist | Mandatory — Urgent |
-| Any | Any | Repeat offender (3+ / 90d) | Priority Review | Mandatory |
+| Immediate safety risk | Critical | Trust & Safety Specialist | 1 hour | Required |
+| Minor involved | Critical | Child Safety Escalation | 1 hour | Required |
+| Fraud or scam | High | Fraud and Account Integrity | 4 hours | Required |
+| Account compromise | High | Fraud and Account Integrity | 4 hours | Required |
+| Personal data exposure | High | Privacy Review | 4 hours | Required |
+| Unclear privacy concern | Medium | Privacy Review | 24 hours | Usually required |
+| Credible threat | High | Trust & Safety Review | 4 hours | Required |
+| Repeated harassment | Medium | Trust & Safety Review | 24 hours | Required |
+| Harmful misinformation | Medium / High | Policy Review | 4 to 24 hours | Usually required |
+| Policy confusion | Low | Support / Education | 72 hours | Not always required |
+| Appeal or unclear policy decision | Medium | Policy Review | 24 hours | Usually required |
+| Low-confidence classification | Severity floor applies | Human Review Queue | Based on severity | Required |
 
----
+## SLA Targets
 
-## Escalation Contacts
+| Severity | SLA Target | Operational Meaning |
+|---|---|---|
+| Critical | 1 hour | Immediate escalation required |
+| High | 4 hours | Specialist review required same day |
+| Medium | 24 hours | Review within one working day |
+| Low | 72 hours | Standard support response |
 
-| Role | Escalation Trigger |
+## Human Review Rules
+
+Human review is required when:
+
+- severity is Critical
+- severity is High
+- a minor may be involved
+- the report contains self-harm or crisis language
+- the report includes credible threats
+- the report involves financial fraud
+- the report involves personal data exposure
+- model confidence is below 0.75
+- the report has multiple possible risk categories
+- the user is appealing a serious action
+- the recommended action could significantly affect user access or safety
+
+Automation can assist with routing, but it should not be the final decision-maker for high-risk or ambiguous cases.
+
+## Final Action Options
+
+| Final Action | Description |
 |---|---|
-| T&S Tier Lead | Any T3 case flagged REPEAT_OFFENDER or analyst override to T4 |
-| Head of Trust & Safety | Any T4 case; CSAM confirmed; coordinated attack signals |
-| Legal Counsel | Regulatory or legal risk category at T3+; all CSAM referrals |
-| Law Enforcement Liaison | Credible imminent physical threat; confirmed CSAM |
-| Communications / PR | Coordinated inauthentic behavior campaigns at scale; high-media-risk incidents |
+| No action | No policy or safety issue found |
+| User education | Provide explanation, policy guidance, or next steps |
+| Content review | Send reported content for review |
+| Account security review | Investigate suspicious login or account takeover |
+| Fraud investigation | Review scam, payment, or impersonation signals |
+| Privacy escalation | Review possible personal data exposure |
+| Safety escalation | Escalate urgent harm or crisis-related case |
+| Child safety escalation | Escalate any case involving possible risk to a minor |
+| Policy review | Send unclear or contested policy cases for specialist review |
+| Human review required | Hold automated action until manual review is completed |
 
----
+## Example Routing Scenarios
 
-## Cross-Reference
+| User Report | Decision Path | Severity | Team | SLA |
+|---|---|---|---|---|
+| "Someone changed my password and I can't get back into my account." | Fraud/account compromise | High | Fraud and Account Integrity | 4 hours |
+| "A user posted my phone number in a public comment." | Privacy risk | High | Privacy Review | 4 hours |
+| "Someone keeps messaging me after I asked them to stop." | Harassment | Medium | Trust & Safety Review | 24 hours |
+| "This account is telling people to send money through a private payment link." | Scam/fraud | High | Fraud and Account Integrity | 4 hours |
+| "I'm worried an adult is contacting my younger sibling." | Minor involved | Critical | Child Safety Escalation | 1 hour |
+| "I don't understand why my post was removed." | Policy confusion | Low | Support / Education | 72 hours |
+| "This post is giving dangerous medical advice." | Harmful misinformation | High | Policy Review | 4 hours |
 
-| Document | Purpose |
+## Automation Logic
+
+The decision tree can be translated into rule-based logic or used alongside a machine learning classifier.
+
+Example pseudo-logic:
+
+```
+IF immediate_safety_risk = true:
+    severity = Critical
+    escalation_team = Trust & Safety Specialist
+    human_review_required = true
+    sla_target_hours = 1
+
+ELSE IF minor_involved = true:
+    severity = Critical
+    escalation_team = Child Safety Escalation
+    human_review_required = true
+    sla_target_hours = 1
+
+ELSE IF fraud_or_account_compromise = true:
+    severity = High
+    escalation_team = Fraud and Account Integrity
+    human_review_required = true
+    sla_target_hours = 4
+
+ELSE IF privacy_exposure = true:
+    severity = High
+    escalation_team = Privacy Review
+    human_review_required = true
+    sla_target_hours = 4
+
+ELSE IF model_confidence < 0.75:
+    escalation_team = Human Review Queue
+    human_review_required = true
+    severity = severity_floor
+
+ELSE:
+    route based on predicted risk category
+```
+
+## Quality Assurance Checks
+
+For each reviewed ticket, QA should check:
+
+- Was the highest-risk signal identified?
+- Was the correct severity assigned?
+- Was the correct escalation team selected?
+- Was the SLA target correct?
+- Was human review correctly required or not required?
+- Was the final action appropriate?
+- Was the decision explainable?
+- Was the ticket handled within the SLA?
+- Was there any over-reliance on automation?
+
+## Risk Controls
+
+| Control | Purpose |
 |---|---|
-| `docs/risk_taxonomy.md` | Category and severity tier definitions |
-| `docs/qa_checklist.md` | Quality criteria applied at Stage 5 |
-| `docs/human_in_the_loop_process.md` | Detailed human review procedures |
-| `docs/responsible_ai_safeguards.md` | Model confidence thresholds and bias controls |
-| `docs/data_dictionary.md` | Field definitions for routing_reason_code and flag fields |
+| Highest-risk signal rule | Prevents serious risks being hidden inside lower-risk tickets |
+| Mandatory human review for High/Critical cases | Reduces risk of harmful automated decisions |
+| Severity floor for ambiguous cases | Prevents under-classification of unclear reports |
+| SLA targets | Supports timely response to urgent cases |
+| Escalation team mapping | Ensures specialist handling |
+| QA review | Detects workflow and classification errors |
+| Model confidence threshold | Identifies cases where automation is uncertain |
+
+## Portfolio Relevance
+
+This decision tree demonstrates practical skills in:
+
+- Trust & Safety operations
+- risk triage design
+- escalation workflow design
+- SLA mapping
+- operational decision-making
+- responsible automation
+- human-in-the-loop review
+- AI-assisted workflow design
+- process documentation
+- safety-focused product operations
+
+## Notes
+
+This decision tree is designed for portfolio demonstration only. It is not a real-world platform policy and should not be used as an operational safety procedure without expert review, legal review, policy validation, and specialist input.
