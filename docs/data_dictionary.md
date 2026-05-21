@@ -1,191 +1,746 @@
 # Data Dictionary
 
-**Project:** Trust & Safety Operations — AI User Report Triage
-**Version:** 1.0
-**Last Updated:** 2026-05-21
-**Owner:** Trust & Safety Operations / Data Engineering
+## Project Context
 
----
+This data dictionary is part of the portfolio project:
 
-## Overview
+AI Trust & Safety Operations Case Study: Risk Triage, Taxonomy Design and Escalation Workflow
 
-This document provides field-level definitions for all datasets used in the Trust & Safety AI Triage project. It covers the primary case management dataset, the reporter and reported-user profile datasets, the QA review log, and the model inference log. These definitions govern data collection, storage, analysis, and reporting across the pipeline.
+The project uses a fully synthetic dataset of user reports to demonstrate how Trust & Safety teams can structure messy risk signals for triage, escalation, quality assurance, SQL analysis, machine learning, and dashboard reporting.
 
-Field definitions are aligned with the risk taxonomy, escalation decision tree, and QA checklist to ensure consistent interpretation across operational, analytical, and governance use cases.
+No real users, platforms, accounts, companies, or incidents are used in this project.
 
----
+## Purpose
 
-## Dataset 1: Case Management — `ts_cases`
+The purpose of this data dictionary is to define every field used in the synthetic Trust & Safety dataset.
 
-The primary operational dataset. Each row represents one user-submitted report that has entered the triage pipeline.
+A clear data dictionary helps ensure that:
 
-| Field Name | Data Type | Nullable | Description | Example Values |
-|---|---|---|---|---|
-| `case_id` | VARCHAR(20) | No | Unique identifier for the case. Format: CASE-YYYYMMDD-NNNNNN | CASE-20260521-000142 |
-| `parent_case_id` | VARCHAR(20) | Yes | If this case was escalated from a lower tier, the original case ID. Null for original cases. | CASE-20260521-000141 |
-| `report_submitted_at` | TIMESTAMP (UTC) | No | Timestamp when the user submitted the report to the platform | 2026-05-21 14:32:11 UTC |
-| `case_created_at` | TIMESTAMP (UTC) | No | Timestamp when the case was created in the case management system (may differ from submission due to queue ingestion lag) | 2026-05-21 14:32:45 UTC |
-| `case_closed_at` | TIMESTAMP (UTC) | Yes | Timestamp when the case was closed. Null if case is still open. | 2026-05-21 16:14:03 UTC |
-| `sla_deadline_at` | TIMESTAMP (UTC) | No | Calculated SLA deadline based on severity tier and case_created_at | 2026-05-21 18:32:45 UTC |
-| `sla_breached` | BOOLEAN | No | TRUE if case was closed after sla_deadline_at or remains open past the deadline | FALSE |
-| `reporter_user_id` | VARCHAR(36) | No | Anonymized identifier of the user who submitted the report | usr_a1b2c3d4 |
-| `reported_user_id` | VARCHAR(36) | No | Anonymized identifier of the user being reported | usr_e5f6g7h8 |
-| `reported_content_ref` | VARCHAR(100) | No | Reference identifier for the reported content (post ID, message ID, etc.) | post_99887766 |
-| `report_category_submitted` | VARCHAR(50) | No | Risk category selected by the reporter at submission time (free-form; not normalized) | Harassment |
-| `ai_risk_category` | VARCHAR(50) | No | Primary risk category assigned by the AI classifier. Values align with risk_taxonomy.md | Harassment & Abuse |
-| `ai_risk_subcategory` | VARCHAR(100) | No | Sub-category assigned by the AI classifier. Values align with risk_taxonomy.md | Targeted Harassment |
-| `ai_severity_tier` | SMALLINT | No | Severity tier (1–4) assigned by the AI classifier | 2 |
-| `ai_confidence_score` | DECIMAL(5,4) | No | Calibrated probability score (0.0000–1.0000) for the top predicted category | 0.8712 |
-| `ai_alt_category_1` | VARCHAR(50) | Yes | Second most probable risk category from AI classifier | Platform Integrity |
-| `ai_alt_score_1` | DECIMAL(5,4) | Yes | Confidence score for ai_alt_category_1 | 0.0931 |
-| `ai_alt_category_2` | VARCHAR(50) | Yes | Third most probable risk category from AI classifier | Misinformation & Manipulation |
-| `ai_alt_score_2` | DECIMAL(5,4) | Yes | Confidence score for ai_alt_category_2 | 0.0214 |
-| `routing_reason_code` | VARCHAR(50) | No | Code describing why the case was routed to its assigned queue. See Appendix A for controlled vocabulary | LOW_CONFIDENCE_OVERRIDE |
-| `assigned_queue` | VARCHAR(50) | No | Name of the queue to which the case was assigned | Standard Review Queue |
-| `analyst_user_id` | VARCHAR(36) | Yes | Anonymized identifier of the analyst who reviewed the case. Null for auto-disposed cases. | analyst_x1y2z3 |
-| `analyst_risk_category` | VARCHAR(50) | Yes | Risk category as determined by the reviewing analyst. Null if analyst accepted AI classification. | Harassment & Abuse |
-| `analyst_severity_tier` | SMALLINT | Yes | Severity tier as determined by the reviewing analyst. Null if analyst accepted AI tier. | 3 |
-| `analyst_override` | BOOLEAN | No | TRUE if the analyst changed the AI-assigned risk category or severity tier | TRUE |
-| `analyst_override_direction` | VARCHAR(10) | Yes | Direction of the override: UPGRADE or DOWNGRADE. Null if analyst_override = FALSE | UPGRADE |
-| `analyst_override_justification` | TEXT | Yes | Free-text justification provided by the analyst for the override. Required when analyst_override = TRUE | Threat contains specific target address and named weapon |
-| `outcome_code` | VARCHAR(50) | No | Enforcement action applied. See Appendix B for controlled vocabulary | CONTENT_REMOVED |
-| `enforcement_applied_at` | TIMESTAMP (UTC) | Yes | Timestamp when enforcement action was executed in the platform tooling | 2026-05-21 16:10:22 UTC |
-| `legal_flag` | BOOLEAN | No | TRUE if the case involves potential legal or regulatory exposure requiring Legal team notification | FALSE |
-| `sensitive_case` | BOOLEAN | No | TRUE if the case involves a vulnerable user (minor, self-harm indicators, domestic violence signals) | FALSE |
-| `watch_list_set` | BOOLEAN | No | TRUE if the reported user was added to enhanced monitoring watch list as a result of this case | FALSE |
-| `csam_flag` | BOOLEAN | No | TRUE if a CSAM/CSEM indicator was detected at any point in this case's lifecycle | FALSE |
-| `repeat_offender_flag` | BOOLEAN | No | TRUE if the reported user had 3 or more prior enforcements within the preceding 90 days at time of case creation | FALSE |
-| `trusted_reporter_flag` | BOOLEAN | No | TRUE if the reporter holds trusted reporter or verified organization status | FALSE |
-| `model_version` | VARCHAR(20) | No | Version identifier of the AI classifier model that produced the ai_* fields for this case | v2.4.1 |
-| `pipeline_version` | VARCHAR(20) | No | Version identifier of the triage pipeline that processed this case | v1.9.0 |
+- dataset columns are easy to understand
+- analysis is reproducible
+- SQL queries use consistent field meanings
+- dashboards are easier to interpret
+- model inputs and outputs are documented
+- quality assurance checks are easier to perform
+- portfolio reviewers can quickly understand the project structure
 
----
+## Dataset Name
 
-## Dataset 2: Reporter Profiles — `ts_reporter_profiles`
+```text
+synthetic_user_reports.csv
+```
 
-Aggregated metadata about users who submit reports. One row per reporter user ID.
+## Dataset Location
 
-| Field Name | Data Type | Nullable | Description | Example Values |
-|---|---|---|---|---|
-| `reporter_user_id` | VARCHAR(36) | No | Anonymized user identifier — primary key | usr_a1b2c3d4 |
-| `account_created_at` | DATE | No | Date the reporter's account was created | 2024-03-15 |
-| `trusted_reporter` | BOOLEAN | No | TRUE if the reporter has been granted trusted reporter status | FALSE |
-| `verified_organization` | BOOLEAN | No | TRUE if the reporter is associated with a verified organization (NGO, law enforcement partner, etc.) | FALSE |
-| `total_reports_submitted` | INTEGER | No | Total number of reports submitted by this user (all time) | 47 |
-| `reports_last_90_days` | INTEGER | No | Number of reports submitted in the preceding 90 days | 12 |
-| `report_action_rate` | DECIMAL(5,4) | Yes | Proportion of this reporter's reports that resulted in an enforcement action (rolling 90-day) | 0.7500 |
-| `report_dismiss_rate` | DECIMAL(5,4) | Yes | Proportion of this reporter's reports that were dismissed as no-violation (rolling 90-day) | 0.2500 |
-| `account_region` | VARCHAR(5) | Yes | ISO 3166-1 alpha-2 country code of the reporter's registered region (may differ from content origin) | US |
+```text
+data/synthetic_user_reports.csv
+```
 
----
+## Dataset Description
 
-## Dataset 3: Reported User Profiles — `ts_reported_user_profiles`
+This dataset contains synthetic user reports submitted to a fictional AI-enabled Trust & Safety triage workflow.
 
-Aggregated enforcement history for users who have been the subject of reports. One row per reported user ID.
+Each row represents one fictional user report.
 
-| Field Name | Data Type | Nullable | Description | Example Values |
-|---|---|---|---|---|
-| `reported_user_id` | VARCHAR(36) | No | Anonymized user identifier — primary key | usr_e5f6g7h8 |
-| `account_created_at` | DATE | No | Date the reported user's account was created | 2023-11-02 |
-| `total_reports_received` | INTEGER | No | Total number of reports received against this user (all time) | 8 |
-| `total_enforcements` | INTEGER | No | Total number of enforcement actions applied to this user (all time) | 3 |
-| `enforcements_last_90_days` | INTEGER | No | Number of enforcement actions applied in the preceding 90 days | 2 |
-| `current_account_status` | VARCHAR(20) | No | Current account status: ACTIVE, SUSPENDED_TEMP, SUSPENDED_PERM, TERMINATED, UNDER_REVIEW | ACTIVE |
-| `watch_list` | BOOLEAN | No | TRUE if user is currently on the enhanced monitoring watch list | FALSE |
-| `watch_list_added_at` | TIMESTAMP (UTC) | Yes | Timestamp when user was most recently added to the watch list. Null if watch_list = FALSE | NULL |
-| `highest_tier_actioned` | SMALLINT | Yes | Highest severity tier (1–4) at which an enforcement action has been applied to this user | 2 |
-| `account_region` | VARCHAR(5) | Yes | ISO 3166-1 alpha-2 country code of the reported user's registered region | GB |
+The dataset is designed to support:
 
----
+- risk category analysis
+- severity distribution analysis
+- SLA analysis
+- escalation routing analysis
+- human review analysis
+- model confidence analysis
+- SQL analysis
+- Python exploratory data analysis
+- basic text classification
+- dashboard visualisation
+- final recommendations reporting
 
-## Dataset 4: QA Review Log — `ts_qa_reviews`
+## Important Note on Synthetic Data
 
-Records of QA audit activities. Each row represents one QA review applied to one case.
+All records in this dataset are fictional.
 
-| Field Name | Data Type | Nullable | Description | Example Values |
-|---|---|---|---|---|
-| `qa_review_id` | VARCHAR(20) | No | Unique identifier for the QA review | QA-20260521-000088 |
-| `case_id` | VARCHAR(20) | No | Foreign key to ts_cases.case_id | CASE-20260521-000142 |
-| `qa_reviewer_id` | VARCHAR(36) | No | Anonymized identifier of the QA reviewer | qa_rev_r9s8t7 |
-| `review_type` | VARCHAR(30) | No | Type of QA review: RANDOM_SAMPLE, TARGETED_AUDIT, CALIBRATION, POST_INCIDENT | RANDOM_SAMPLE |
-| `review_completed_at` | TIMESTAMP (UTC) | No | Timestamp when the QA review was completed | 2026-05-22 09:14:55 UTC |
-| `section_1_pass` | BOOLEAN | No | Whether the case passed all Section 1 (Intake & Classification) checks | TRUE |
-| `section_2_pass` | BOOLEAN | No | Whether the case passed all Section 2 (Content Review) checks | TRUE |
-| `section_3_pass` | BOOLEAN | No | Whether the case passed all Section 3 (Decision & Enforcement) checks | FALSE |
-| `section_4_pass` | BOOLEAN | No | Whether the case passed all Section 4 (Documentation) checks | TRUE |
-| `overall_result` | VARCHAR(20) | No | Overall QA result: PASS, MINOR_DEFECT, MAJOR_DEFECT, CRITICAL_DEFECT | MINOR_DEFECT |
-| `defect_codes` | ARRAY[VARCHAR(15)] | Yes | List of defect codes identified during review. Null if overall_result = PASS | {QA-DEC-002} |
-| `qa_notes` | TEXT | Yes | Free-text notes from the QA reviewer | Enforcement action was proportionate but first-offense warning was not documented as considered |
-| `analyst_notified` | BOOLEAN | No | TRUE if the analyst was notified of QA findings | TRUE |
+The dataset does not include:
 
----
+- real names
+- real emails
+- real phone numbers
+- real addresses
+- real account IDs
+- real payment details
+- real platform names
+- real incident reports
+- real user-generated content
 
-## Dataset 5: Model Inference Log — `ts_model_inference_log`
+The dataset is created for educational and portfolio purposes only.
 
-Immutable record of all AI model predictions. Each row represents one model inference call.
+## Dataset Grain
 
-| Field Name | Data Type | Nullable | Description | Example Values |
-|---|---|---|---|---|
-| `inference_id` | VARCHAR(36) | No | Unique identifier for the inference call | inf_550e8400-e29b |
-| `case_id` | VARCHAR(20) | No | Foreign key to ts_cases.case_id | CASE-20260521-000142 |
-| `model_version` | VARCHAR(20) | No | Model version that produced this inference | v2.4.1 |
-| `inference_timestamp` | TIMESTAMP (UTC) | No | Timestamp of the inference call | 2026-05-21 14:32:44 UTC |
-| `input_content_hash` | VARCHAR(64) | No | SHA-256 hash of the input content used for this inference (for reproducibility; not the raw content) | a3f4b2c1d9e8f7... |
-| `predicted_category` | VARCHAR(50) | No | Top predicted risk category | Harassment & Abuse |
-| `predicted_subcategory` | VARCHAR(100) | No | Top predicted sub-category | Targeted Harassment |
-| `predicted_tier` | SMALLINT | No | Predicted severity tier (1–4) | 2 |
-| `confidence_score` | DECIMAL(5,4) | No | Confidence score for predicted_category | 0.8712 |
-| `top_signals` | JSON | No | JSON array of top contributing signals in plain-language format | [{"signal": "Repeated contact pattern", "weight": 0.42}, ...] |
-| `inference_latency_ms` | INTEGER | No | Time in milliseconds from input receipt to prediction output | 147 |
-| `csam_prescreener_flag` | BOOLEAN | No | TRUE if the CSAM/CSEM pre-screener triggered on this input | FALSE |
+Each row represents:
 
----
+```text
+One synthetic user report / one support or Trust & Safety ticket
+```
 
-## Appendix A: routing_reason_code Controlled Vocabulary
+The expected unique identifier is:
 
-| Code | Description |
+```text
+ticket_id
+```
+
+## Expected Number of Records
+
+The initial dataset should contain approximately:
+
+```text
+500 synthetic tickets
+```
+
+This number can be increased later if needed for modelling or dashboard development.
+
+## Field Summary
+
+| Column Name | Type | Description |
+|---|---|---|
+| ticket_id | String | Unique identifier for each synthetic ticket. |
+| created_at | DateTime | Synthetic timestamp showing when the ticket was created. |
+| user_report | Text | Free-text synthetic user report. |
+| risk_category | Categorical | Primary risk category assigned to the ticket. |
+| subcategory | Categorical | More specific risk type within the primary category. |
+| severity | Categorical | Urgency level assigned to the ticket. |
+| sla_target_hours | Integer | Number of hours within which the ticket should be reviewed or actioned. |
+| region | Categorical | Synthetic region associated with the report. |
+| channel | Categorical | Intake channel where the report was submitted. |
+| language | Categorical | Language of the synthetic report. |
+| model_confidence | Float | Simulated model confidence score between 0 and 1. |
+| escalation_team | Categorical | Team responsible for reviewing or handling the ticket. |
+| human_review_required | Boolean | Indicates whether manual human review is required. |
+| final_action | Categorical | Final workflow action assigned to the ticket. |
+
+## Detailed Field Definitions
+
+### ticket_id
+
+| Attribute | Detail |
 |---|---|
-| `AI_T4_CRITICAL` | AI classifier assigned T4 severity — routed to Crisis Response Queue |
-| `AI_T3_HIGH` | AI classifier assigned T3 severity with confidence >= 0.85 — routed to Priority Review Queue |
-| `AI_T2_STANDARD` | AI classifier assigned T2 severity with confidence >= 0.85 — routed to Standard Review Queue |
-| `AI_T1_AUTO` | AI classifier assigned T1 with confidence >= 0.90 — routed to Automated Disposition |
-| `LOW_CONFIDENCE_OVERRIDE` | AI confidence < 0.85 (T2/T3) or < 0.90 (T1) — mandatory human review |
-| `CSAM_IMMEDIATE` | CSAM/CSEM pre-screener triggered — routed to CSAM Specialist Queue |
-| `REPEAT_OFFENDER` | Reported user has 3+ enforcements in 90 days — escalated to T3 |
-| `TRUSTED_REPORTER` | Reporter holds trusted reporter or verified organization status — T1 elevated to T2 |
-| `ANALYST_ESCALATION` | Human analyst manually escalated from a lower-tier queue |
-| `ANALYST_DOWNGRADE` | Human analyst downgraded from a higher-tier queue with Tier Lead approval |
-| `QA_SAMPLE` | Case selected for QA random sample review post-closure |
-| `T1_CONFIDENCE_INSUFFICIENT` | T1 case with AI confidence < 0.90 — routed to Human Review Queue |
-| `INTAKE_INCOMPLETE` | Required intake fields missing — flagged for supervisor resolution |
+| Data type | String |
+| Example | TKT-0001 |
+| Required | Yes |
+| Unique | Yes |
+| Nullable | No |
+
+#### Description
+
+A unique identifier assigned to each synthetic ticket.
+
+#### Purpose
+
+Used to track, join, review, and reference individual tickets across analysis, QA checks, dashboards, and reports.
+
+#### Example Values
+
+```text
+TKT-0001
+TKT-0002
+TKT-0003
+```
 
 ---
 
-## Appendix B: outcome_code Controlled Vocabulary
+### created_at
 
-| Code | Description |
+| Attribute | Detail |
 |---|---|
-| `CONTENT_REMOVED` | Reported content was removed from the platform |
-| `ACCOUNT_WARNING` | Warning issued to the reported user's account |
-| `ACCOUNT_SUSPENDED_TEMP` | Reported user's account temporarily suspended |
-| `ACCOUNT_SUSPENDED_PERM` | Reported user's account permanently suspended |
-| `ACCOUNT_TERMINATED` | Reported user's account terminated and deleted |
-| `REPORT_DISMISSED` | No policy violation found; report dismissed |
-| `LAW_ENFORCEMENT_REFERRED` | Case referred to law enforcement; content may or may not have been removed |
-| `LEGAL_ESCALATED` | Case escalated to Legal/External Compliance team for action |
-| `ENHANCED_MONITORING` | No immediate action; account placed on watch list for enhanced monitoring |
-| `AUTO_DISPOSITION_KNOWN_SIGNAL` | T1 case auto-actioned based on prior known-bad signal match |
-| `AUTO_DISPOSITION_HIGH_CONFIDENCE` | T1 case auto-closed based on AI confidence >= 0.90 |
-| `PENDING_REVIEW` | Case is still open and under active review (not a final outcome) |
+| Data type | DateTime |
+| Example | 2026-01-15 09:42:00 |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+Synthetic timestamp showing when the user report was created.
+
+#### Purpose
+
+Used for time-based analysis, including ticket volume by date, SLA monitoring, and trend reporting.
+
+#### Example Values
+
+```text
+2026-01-15 09:42:00
+2026-02-03 14:18:00
+2026-03-21 19:05:00
+```
 
 ---
 
-## Cross-Reference
+### user_report
 
-| Document | Purpose |
+| Attribute | Detail |
 |---|---|
-| `docs/risk_taxonomy.md` | Defines values for ai_risk_category and ai_risk_subcategory fields |
-| `docs/escalation_decision_tree.md` | Defines routing_reason_code logic |
-| `docs/qa_checklist.md` | Maps to qa_review_log fields and defect codes |
-| `docs/human_in_the_loop_process.md` | Defines analyst responsibilities for case documentation fields |
-| `docs/responsible_ai_safeguards.md` | Defines model_version governance and model_inference_log retention |
+| Data type | Text |
+| Example | Someone changed my password and I cannot access my account. |
+| Required | Yes |
+| Unique | Usually |
+| Nullable | No |
+
+#### Description
+
+The free-text synthetic report submitted by a fictional user.
+
+#### Purpose
+
+Used as the main text input for classification, summarisation, NLP analysis, and model training.
+
+#### Example Values
+
+```text
+Someone changed my password and I cannot access my account.
+A user posted my phone number in a public comment.
+I do not understand why my post was removed.
+```
+
+#### Notes
+
+The text should remain fictional and should not contain real personal data.
+
+---
+
+### risk_category
+
+| Attribute | Detail |
+|---|---|
+| Data type | Categorical |
+| Example | Scam or fraud |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+The primary Trust & Safety risk category assigned to the ticket.
+
+#### Purpose
+
+Used for taxonomy analysis, routing, dashboard reporting, and model classification.
+
+#### Allowed Values
+
+| Value | Description |
+|---|---|
+| Account abuse | Suspicious login, account takeover, unauthorised access, or account misuse. |
+| Scam or fraud | Deception, suspicious payments, impersonation, or financial manipulation. |
+| Harassment | Targeted abuse, threats, intimidation, or repeated unwanted contact. |
+| Self-harm concern | Possible emotional crisis, self-harm concern, or concern for another user's safety. |
+| Misinformation | False or misleading claims with potential harm. |
+| Privacy concern | Personal data exposure, doxxing, deletion requests, or unauthorised sharing. |
+| Billing safety escalation | Billing issue connected to fraud, coercion, or account misuse. |
+| Policy confusion | User confusion about moderation, account action, appeals, or platform rules. |
+| Child safety concern | Potential risk involving a minor. |
+| Platform integrity | Spam, fake accounts, bots, manipulation, or coordinated abuse. |
+
+---
+
+### subcategory
+
+| Attribute | Detail |
+|---|---|
+| Data type | Categorical |
+| Example | unauthorised_login |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+A more specific classification within the primary risk category.
+
+#### Purpose
+
+Used for more detailed analysis and improved routing.
+
+#### Example Values by Category
+
+| Risk Category | Example Subcategories |
+|---|---|
+| Account abuse | unauthorised_login, suspicious_login_attempt, credential_stuffing_suspected, account_settings_changed |
+| Scam or fraud | impersonation, off_platform_payment, fake_offer, phishing_attempt, investment_scam |
+| Harassment | targeted_insults, repeated_unwanted_contact, threats, hate_directed_abuse |
+| Self-harm concern | self_disclosure, crisis_language, concern_about_other_user |
+| Misinformation | health_misinformation, safety_misinformation, manipulated_media, misleading_claims |
+| Privacy concern | personal_data_exposure, unauthorised_sharing, deletion_request, doxxing_concern |
+| Billing safety escalation | suspicious_charge, payment_method_misuse, coerced_payment, billing_after_account_takeover |
+| Policy confusion | content_removal_question, account_action_question, appeal_request, unclear_policy_application |
+| Child safety concern | minor_contact_concern, suspected_grooming_signal, age_appropriate_content_concern |
+| Platform integrity | spam_network, coordinated_inauthentic_activity, bot_like_activity, fake_account_cluster |
+
+---
+
+### severity
+
+| Attribute | Detail |
+|---|---|
+| Data type | Categorical |
+| Example | High |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+The urgency level assigned to the ticket.
+
+#### Purpose
+
+Used for SLA assignment, queue prioritisation, escalation routing, QA checks, and dashboard reporting.
+
+#### Allowed Values
+
+| Value | Description | SLA Target |
+|---|---|---|
+| Low | Low-risk or informational issue with no immediate harm signal. | 72 hours |
+| Medium | Potential risk exists, but urgency is limited or evidence is unclear. | 24 hours |
+| High | Clear risk signal requiring specialist review or faster action. | 4 hours |
+| Critical | Immediate or severe safety risk requiring urgent escalation. | 1 hour |
+
+---
+
+### sla_target_hours
+
+| Attribute | Detail |
+|---|---|
+| Data type | Integer |
+| Example | 4 |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+The target number of hours within which the ticket should be reviewed or actioned.
+
+#### Purpose
+
+Used to measure operational responsiveness and SLA compliance.
+
+#### Allowed Values
+
+| Severity | SLA Target Hours |
+|---|---:|
+| Critical | 1 |
+| High | 4 |
+| Medium | 24 |
+| Low | 72 |
+
+---
+
+### region
+
+| Attribute | Detail |
+|---|---|
+| Data type | Categorical |
+| Example | UK |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+Synthetic region assigned to the ticket.
+
+#### Purpose
+
+Used for dashboard segmentation and fairness monitoring.
+
+#### Example Values
+
+```text
+UK
+Europe
+North America
+Asia-Pacific
+Middle East
+Africa
+Latin America
+Global / Unknown
+```
+
+#### Notes
+
+Regions are synthetic and should not be interpreted as real user locations.
+
+---
+
+### channel
+
+| Attribute | Detail |
+|---|---|
+| Data type | Categorical |
+| Example | Web form |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+The fictional intake channel through which the user report was submitted.
+
+#### Purpose
+
+Used to analyse ticket source patterns and operational workload.
+
+#### Example Values
+
+```text
+Web form
+Mobile app
+Email support
+Live chat
+In-product report
+Appeal form
+```
+
+---
+
+### language
+
+| Attribute | Detail |
+|---|---|
+| Data type | Categorical |
+| Example | English |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+The language assigned to the synthetic report.
+
+#### Purpose
+
+Used for analysis of ticket handling across language groups and to monitor possible model performance differences.
+
+#### Example Values
+
+```text
+English
+Spanish
+French
+German
+Arabic
+Russian
+Other
+```
+
+#### Notes
+
+The initial dataset can keep all reports in English while still using this field for segmentation. If multilingual text is added later, it should remain synthetic.
+
+---
+
+### model_confidence
+
+| Attribute | Detail |
+|---|---|
+| Data type | Float |
+| Example | 0.87 |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+A simulated confidence score representing how confident the model is in its classification.
+
+#### Purpose
+
+Used to decide whether a ticket should be routed to human review.
+
+#### Expected Range
+
+```text
+0.00 to 1.00
+```
+
+#### Recommended Interpretation
+
+| Confidence Score | Interpretation | Recommended Action |
+|---|---|---|
+| 0.90 to 1.00 | High confidence | Can support low-risk routing if no sensitive risk is present. |
+| 0.75 to 0.89 | Moderate to high confidence | Acceptable for low-risk cases, but review sensitive cases. |
+| 0.50 to 0.74 | Low confidence | Human review required. |
+| Below 0.50 | Very low confidence | Human review required and model output should be treated cautiously. |
+
+---
+
+### escalation_team
+
+| Attribute | Detail |
+|---|---|
+| Data type | Categorical |
+| Example | Fraud and Account Integrity |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+The team responsible for handling or reviewing the ticket.
+
+#### Purpose
+
+Used for routing analysis, workload analysis, SLA tracking, and operational design.
+
+#### Allowed Values
+
+| Escalation Team | Handles |
+|---|---|
+| Trust & Safety Review | Harassment, threats, self-harm concerns, general safety abuse. |
+| Child Safety Escalation | Any report involving possible risk to a minor. |
+| Fraud and Account Integrity | Scams, impersonation, account compromise, suspicious payments. |
+| Privacy Review | Personal data exposure, doxxing, unauthorised sharing. |
+| Policy Review | Misinformation, appeals, unclear moderation decisions. |
+| Support / Education | Low-risk policy questions or standard guidance. |
+| Human Review Queue | Ambiguous, multi-risk, or low-confidence tickets. |
+
+---
+
+### human_review_required
+
+| Attribute | Detail |
+|---|---|
+| Data type | Boolean |
+| Example | True |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+Indicates whether the ticket requires manual human review.
+
+#### Purpose
+
+Used to measure human-in-the-loop workload and responsible AI safeguards.
+
+#### Allowed Values
+
+```text
+True
+False
+```
+
+#### Human Review Should Be True When
+
+Human review is required when:
+
+- severity is High or Critical
+- a minor may be involved
+- self-harm or crisis language appears
+- fraud or scam is suspected
+- personal data exposure is reported
+- credible threat is reported
+- model confidence is below 0.75
+- the ticket is ambiguous
+- the ticket has multiple possible risk categories
+- the final action could significantly affect user safety or access
+
+---
+
+### final_action
+
+| Attribute | Detail |
+|---|---|
+| Data type | Categorical |
+| Example | Fraud investigation |
+| Required | Yes |
+| Unique | No |
+| Nullable | No |
+
+#### Description
+
+The final workflow action assigned to the ticket after triage.
+
+#### Purpose
+
+Used to analyse operational outcomes and workflow effectiveness.
+
+#### Allowed Values
+
+| Final Action | Description |
+|---|---|
+| No action | No policy, safety, or operational issue found. |
+| User education | User receives guidance or policy explanation. |
+| Content review | Reported content is sent for review. |
+| Account security review | Suspicious login or account compromise is investigated. |
+| Fraud investigation | Scam, impersonation, or payment risk is reviewed. |
+| Privacy escalation | Personal data exposure or privacy issue is escalated. |
+| Safety escalation | Urgent harm or safety risk is escalated. |
+| Child safety escalation | Minor-related concern is sent to specialist review. |
+| Policy review | Unclear or disputed policy issue is reviewed. |
+| Human review required | Manual review is required before final decision. |
+
+---
+
+## Derived Fields for Future Analysis
+
+The initial dataset may later be expanded with derived fields.
+
+| Derived Field | Description |
+|---|---|
+| created_date | Date extracted from created_at. |
+| created_month | Month extracted from created_at. |
+| created_week | Week number extracted from created_at. |
+| sla_due_at | Timestamp calculated from created_at plus sla_target_hours. |
+| resolved_at | Synthetic timestamp showing when the case was resolved. |
+| response_time_hours | Time between created_at and resolved_at. |
+| sla_met | Whether response_time_hours is less than or equal to sla_target_hours. |
+| qa_score | QA score from 0 to 3. |
+| qa_outcome | Pass, partial pass, fail, or critical fail. |
+| qa_error_type | Type of quality issue found during QA. |
+| model_prediction_correct | Whether the model prediction matched the final human label. |
+| human_override | Whether the human reviewer changed the model recommendation. |
+
+## Suggested Data Quality Checks
+
+Before using the dataset for analysis, check the following:
+
+| Check | Expected Result |
+|---|---|
+| ticket_id has no duplicates | Every ticket should have a unique ID. |
+| required fields are not null | No missing values in required columns. |
+| severity values are valid | Only Low, Medium, High, or Critical. |
+| SLA values match severity | Critical = 1, High = 4, Medium = 24, Low = 72. |
+| model_confidence is between 0 and 1 | No values below 0 or above 1. |
+| human_review_required is boolean | Values should be True or False. |
+| escalation_team values are valid | Only approved team names should appear. |
+| final_action values are valid | Only approved final actions should appear. |
+| risk_category values are valid | Only approved taxonomy categories should appear. |
+| subcategory matches risk_category | Subcategory should belong to the assigned category. |
+
+## Example Record
+
+| Column | Example Value |
+|---|---|
+| ticket_id | TKT-0001 |
+| created_at | 2026-01-15 09:42:00 |
+| user_report | Someone changed my password and I cannot access my account. |
+| risk_category | Account abuse |
+| subcategory | unauthorised_login |
+| severity | High |
+| sla_target_hours | 4 |
+| region | UK |
+| channel | Web form |
+| language | English |
+| model_confidence | 0.86 |
+| escalation_team | Fraud and Account Integrity |
+| human_review_required | True |
+| final_action | Account security review |
+
+## Analytics Use Cases
+
+This dataset can support the following analysis questions:
+
+| Question | Relevant Fields |
+|---|---|
+| Which risk categories appear most often? | risk_category |
+| Which severity levels dominate the queue? | severity |
+| Which teams receive the most escalations? | escalation_team |
+| How much work requires human review? | human_review_required |
+| Which categories have lower model confidence? | risk_category, model_confidence |
+| How many tickets are High or Critical? | severity |
+| Are SLA targets distributed appropriately? | severity, sla_target_hours |
+| Which intake channels generate the most high-risk tickets? | channel, severity |
+| Are certain regions overrepresented in high-severity tickets? | region, severity |
+| Which final actions are most common? | final_action |
+
+## SQL Analysis Relevance
+
+This data dictionary supports SQL queries such as:
+
+- count tickets by risk category
+- count tickets by severity
+- calculate percentage of tickets requiring human review
+- identify categories with lowest average model confidence
+- analyse escalation team workload
+- compare SLA targets across severity levels
+- find high-risk tickets by region or channel
+- identify tickets that should receive QA review
+
+## Machine Learning Relevance
+
+The dataset can be used for a basic text classification model.
+
+Suggested setup:
+
+| Element | Field |
+|---|---|
+| Input text | user_report |
+| Target label | risk_category |
+| Optional target | severity |
+| Model confidence | model_confidence |
+| Human review flag | human_review_required |
+
+Example modelling task:
+
+```text
+Predict risk_category from user_report using TF-IDF and Logistic Regression.
+```
+
+Possible evaluation outputs:
+
+- accuracy score
+- classification report
+- confusion matrix
+- category-level precision
+- category-level recall
+- category-level F1 score
+
+## Dashboard Relevance
+
+This dataset can support dashboard visuals such as:
+
+| Visual | Fields |
+|---|---|
+| Tickets by risk category | risk_category |
+| Tickets by severity | severity |
+| Escalation team workload | escalation_team |
+| Human review required percentage | human_review_required |
+| Average model confidence by category | risk_category, model_confidence |
+| SLA target distribution | sla_target_hours |
+| Ticket volume by date | created_at |
+| Final actions breakdown | final_action |
+| Region and channel breakdown | region, channel |
+
+## Responsible AI Notes
+
+Because this dataset is designed for an AI-assisted triage workflow, it should be used with the following safeguards:
+
+- Treat model outputs as recommendations, not final decisions.
+- Require human review for High and Critical cases.
+- Require human review for low-confidence predictions.
+- Review false negatives carefully, especially for sensitive categories.
+- Clearly label all data as synthetic.
+- Do not add real user reports to the dataset.
+- Do not publish real personal information.
+- Do not claim that the model is production-ready.
+
+## Portfolio Relevance
+
+This data dictionary demonstrates skills in:
+
+- structured dataset design
+- documentation
+- data governance
+- Trust & Safety workflow design
+- analytics planning
+- SQL-readiness
+- machine learning-readiness
+- dashboard planning
+- responsible AI documentation
+- quality assurance support
+
+## Notes
+
+This data dictionary is for portfolio and educational purposes only. It does not describe a production Trust & Safety system. A real-world implementation would require privacy review, policy review, legal input, operational testing, security controls, and expert safety oversight.
