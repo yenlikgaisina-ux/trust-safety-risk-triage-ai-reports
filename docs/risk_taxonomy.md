@@ -1,126 +1,247 @@
 # Risk Taxonomy
 
-**Project:** Trust & Safety Operations — AI User Report Triage  
-**Version:** 1.0  
-**Last Updated:** 2026-05-21  
-**Owner:** Trust & Safety Operations
+## Project Context
 
----
+This risk taxonomy is part of the portfolio project:
 
-## Overview
+**AI Trust & Safety Operations Case Study: Risk Triage, Taxonomy Design and Escalation Workflow**
 
-This document defines the canonical risk taxonomy used to classify user-generated reports submitted to the AI-assisted Trust & Safety triage pipeline. Each report is assigned a **primary risk category**, a **sub-category**, and a **severity tier** to ensure consistent routing, prioritization, and policy enforcement across review queues.
+The project uses fully synthetic user reports to demonstrate how messy risk signals can be converted into structured operational inputs for Trust & Safety, AI operations, risk triage, quality assurance, escalation, and workflow improvement.
 
-The taxonomy is designed to be exhaustive, mutually exclusive at the primary-category level, and extensible as new harm vectors emerge.
+No real users, platforms, companies, accounts, or incidents are used in this project.
 
----
+## Purpose of the Taxonomy
+
+The purpose of this taxonomy is to create a consistent structure for classifying user reports into risk categories, subcategories, severity levels, escalation routes, and service-level agreement targets.
+
+A strong taxonomy helps Trust & Safety teams:
+
+- classify incoming reports consistently
+- identify high-risk cases quickly
+- route urgent cases to the correct specialist team
+- measure risk trends over time
+- support quality assurance reviews
+- improve human-in-the-loop decision-making
+- create structured data for dashboards, SQL analysis, and machine learning models
+
+## How to Use This Taxonomy
+
+Each incoming ticket should be reviewed using the following steps:
+
+1. Read the user report carefully.
+2. Identify the primary risk category.
+3. Select the most relevant subcategory.
+4. Assign a severity level.
+5. Apply the SLA target linked to the severity level.
+6. Route the ticket to the correct escalation team.
+7. Mark whether human review is required.
+8. Record the final action taken.
+
+Each ticket should have one primary risk category. If a ticket contains multiple risks, classify it according to the highest-risk issue.
 
 ## Primary Risk Categories
 
-### 1. Harmful Content
+| Risk Category | Definition | Example Signal | Typical Severity |
+|---|---|---|---|
+| Account abuse | Reports involving compromised accounts, suspicious login activity, unauthorised access, or misuse of account features. | A user says their account settings changed without permission. | Medium / High |
+| Scam or fraud | Reports involving deception, suspicious payments, impersonation, fake offers, or financial manipulation. | A user reports being asked to pay outside the platform. | High |
+| Harassment | Reports involving targeted abuse, repeated unwanted contact, threats, or hostile behaviour. | A user reports repeated aggressive messages from another account. | Medium / High |
+| Self-harm concern | Reports suggesting possible risk of self-harm, emotional crisis, or concern for another user's safety. | A user reports that someone appears to be in immediate distress. | High / Critical |
+| Misinformation | Reports involving false, misleading, or potentially harmful claims. | A user reports dangerous health advice being shared. | Medium / High |
+| Privacy concern | Reports involving personal data exposure, unauthorised sharing, deletion requests, or visibility concerns. | A user says private information was exposed publicly. | Medium / High |
+| Billing safety escalation | Billing issues connected to fraud, coercion, suspicious charges, or account compromise. | A user reports unexpected charges after a suspected account takeover. | Medium / High |
+| Policy confusion | Reports where the user does not understand a moderation decision, account action, or platform rule. | A user asks why their content was removed. | Low / Medium |
+| Child safety concern | Reports involving potential risk to a minor or age-inappropriate contact/content. | A user reports suspicious interaction involving someone under 18. | Critical |
+| Platform integrity | Reports involving spam, fake accounts, coordinated manipulation, bot-like behaviour, or abuse patterns. | Multiple accounts appear to post identical suspicious messages. | Medium / High |
 
-Reports in this category involve user-generated content that poses a direct risk of physical, psychological, or social harm to individuals or groups.
+## Subcategories
 
-| Sub-Category | Description | Example Signals |
-|---|---|---|
-| Violence & Threats | Explicit or credible threats of violence against identified or identifiable persons | Weapon references, target specificity |
-| Hate Speech | Content that attacks a protected class based on race, ethnicity, religion, gender, sexual orientation, disability, or national origin | Slurs, dehumanizing language, calls for discrimination |
-| Self-Harm & Suicide | Content that promotes, glorifies, or provides methods for self-injury or suicide | Method details, encouragement, pacts |
-| Child Safety (CSAM/CSEM) | Any content that sexually exploits or endangers minors | Age indicators, explicit material, grooming patterns |
-| Graphic Violence | Gore, torture, or gratuitous depictions of injury without clear journalistic or educational context | Shock content, snuff imagery |
-
-**Default Severity Floor:** Tier 3 (High) — escalate immediately if CSAM/CSEM indicators present.
-
----
-
-### 2. Harassment & Abuse
-
-Reports involving targeted interpersonal misconduct directed at a specific individual or group.
-
-| Sub-Category | Description | Example Signals |
-|---|---|---|
-| Targeted Harassment | Sustained, repeated hostile contact with a specific user | Multiple reports from same target, coordinated pile-ons |
-| Doxxing | Publication or threat to publish private personally identifiable information (PII) | Home addresses, phone numbers, employer details |
-| Sexual Harassment | Unwanted sexual advances, explicit messages, or non-consensual intimate imagery (NCII) | Unsolicited explicit content, sextortion |
-| Impersonation | Falsely assuming the identity of another person or organization to deceive | Cloned profiles, misleading handles |
-| Stalking | Persistent unwanted contact or monitoring behavior that induces fear | Repeated check-ins, location references, fear statements from target |
-
-**Default Severity Floor:** Tier 2 (Medium) — escalate to Tier 3 if PII exposed or physical threat implied.
-
----
-
-### 3. Misinformation & Manipulation
-
-Reports involving deceptive content that undermines informed decision-making, public discourse, or democratic processes.
-
-| Sub-Category | Description | Example Signals |
-|---|---|---|
-| Health Misinformation | False or unverified medical claims that could cause harm if acted upon | Vaccine misinformation, miracle cures, denial of established medical consensus |
-| Election Interference | Content designed to suppress votes, spread false electoral information, or impersonate electoral authorities | False polling dates, voter ID disinformation |
-| Synthetic Media / Deepfakes | AI-generated or manipulated audio/video misrepresenting real persons | Unconsented face-swap, voice clone of public figure |
-| Coordinated Inauthentic Behavior | Organized campaigns using fake accounts to amplify narratives | Identical post patterns, bot-like activity, coordinated timing |
-| Scams & Fraud | Content designed to deceive users into financial loss or credential theft | Phishing links, advance-fee schemes, impersonation of financial institutions |
-
-**Default Severity Floor:** Tier 2 (Medium) — escalate Election Interference and CSAM-adjacent synthetic media to Tier 3.
-
----
-
-### 4. Platform Integrity
-
-Reports involving violations of platform rules that do not necessarily involve direct harm but undermine the integrity of the service.
-
-| Sub-Category | Description | Example Signals |
-|---|---|---|
-| Spam | Unsolicited bulk messages, low-quality content, or repetitive promotional material | High message volume, identical content across accounts |
-| Account Takeover (ATO) | Evidence of unauthorized access to a user account | Unusual login geography, user reports of unrecognized activity |
-| Manipulation of Engagement Metrics | Artificial inflation of likes, followers, views, or ratings | Sudden metric spikes, third-party service references |
-| Terms of Service (ToS) Violations | Behavior that violates platform rules without falling into a higher-risk category | Prohibited commercial activity, ban evasion |
-
-**Default Severity Floor:** Tier 1 (Low) — escalate ATO to Tier 2 immediately given account security implications.
-
----
-
-### 5. Regulatory & Legal Risk
-
-Reports that implicate legal obligations, regulatory compliance, or potential liability for the platform.
-
-| Sub-Category | Description | Example Signals |
-|---|---|---|
-| Intellectual Property Infringement | Unauthorized use of copyrighted, trademarked, or patented material | DMCA notices, watermarked content, logo misuse |
-| Privacy Violations | Processing or publication of personal data without legal basis | GDPR/CCPA subject access requests, unauthorized data sharing |
-| Illegal Goods & Services | Facilitation of trade in controlled substances, weapons, or other prohibited items | Drug sale terminology, unlicensed firearms, counterfeit goods |
-| Financial Crimes | Money laundering, fraud facilitation, or unauthorized financial services activity | Suspicious transaction patterns, unregulated crypto schemes |
-
-**Default Severity Floor:** Tier 2 (Medium) — Legal team notification required for all Tier 3 regulatory incidents.
-
----
-
-## Severity Tier Definitions
-
-| Tier | Label | SLA (First Response) | Human Review Required | Description |
-|---|---|---|---|---|
-| **T1** | Low | 72 hours | No (AI disposition permitted) | Minor policy violations with limited harm potential and no identifiable victim |
-| **T2** | Medium | 24 hours | Recommended | Moderate harm potential or policy violation involving an identifiable affected party |
-| **T3** | High | 4 hours | **Mandatory** | Imminent harm risk, legal exposure, CSAM/CSEM indicators, or credible physical threat |
-| **T4** | Critical | 1 hour | **Mandatory — Senior Escalation** | Active crisis scenario (e.g., imminent violence, CSAM confirmed, coordinated attack on infrastructure) |
-
----
-
-## Taxonomy Governance
-
-- **Review Cadence:** The taxonomy is reviewed quarterly by the Trust & Safety Policy team and updated to reflect emerging harm vectors, regulatory changes, and post-incident learnings.
-- **Change Control:** All taxonomy modifications require sign-off from the Head of Trust & Safety and are logged in the policy change register.
-- **Versioning:** Semantic versioning (MAJOR.MINOR.PATCH) is applied. Breaking changes to category codes increment the MAJOR version and trigger re-training of any ML classifiers dependent on this taxonomy.
-- **Feedback Loop:** Analyst disagreement rates and escalation override patterns are reviewed monthly to identify taxonomy gaps or ambiguities.
-
----
-
-## Cross-Reference
-
-| Document | Purpose |
+| Risk Category | Subcategories |
 |---|---|
-| `docs/escalation_decision_tree.md` | Routing logic based on taxonomy classification |
-| `docs/qa_checklist.md` | Quality assurance criteria by risk category |
-| `docs/human_in_the_loop_process.md` | Human review triggers and handoff procedures |
-| `docs/responsible_ai_safeguards.md` | Model governance and bias mitigation controls |
-| `docs/data_dictionary.md` | Field-level definitions for the case management dataset |
+| Account abuse | unauthorised_login, suspicious_login_attempt, credential_stuffing_suspected, session_hijack_suspected, account_settings_changed, account_recovery_abuse |
+| Scam or fraud | impersonation, off_platform_payment, fake_offer, advance_fee_scam, investment_scam, phishing_attempt, refund_abuse |
+| Harassment | targeted_insults, repeated_unwanted_contact, threats, hate_directed_abuse, sexual_harassment, intimidation |
+| Self-harm concern | self_disclosure, crisis_language, concern_about_other_user, potential_immediate_risk, non_immediate_distress |
+| Misinformation | health_misinformation, safety_misinformation, manipulated_media, misleading_claims, harmful_instructional_content |
+| Privacy concern | personal_data_exposure, unauthorised_sharing, deletion_request, doxxing_concern, visibility_misconfiguration |
+| Billing safety escalation | suspicious_charge, payment_method_misuse, coerced_payment, refund_dispute_with_fraud_signal, billing_after_account_takeover |
+| Policy confusion | content_removal_question, account_action_question, feature_restriction_question, appeal_request, unclear_policy_application |
+| Child safety concern | minor_contact_concern, age_appropriate_content_concern, suspected_grooming_signal, minor_privacy_concern |
+| Platform integrity | spam_network, coordinated_inauthentic_activity, bot_like_activity, fake_account_cluster, scripted_abuse, review_manipulation |
+
+## Severity Levels
+
+| Severity | Definition | Example | SLA Target |
+|---|---|---|---|
+| Low | Low-risk or informational issue with no immediate harm signal. | A user asks why a post was removed. | 72 hours |
+| Medium | Potential risk exists, but urgency is limited or evidence is unclear. | A user reports unwanted messages but no threats. | 24 hours |
+| High | Clear risk signal requiring specialist review or faster action. | A user reports impersonation, fraud, account compromise, or personal data exposure. | 4 hours |
+| Critical | Immediate or severe safety risk requiring urgent escalation. | A report involves a minor, imminent harm, or urgent self-harm concern. | 1 hour |
+
+## Severity Assignment Rules
+
+Severity should be assigned according to the highest-risk signal in the ticket.
+
+### Critical Severity
+
+Assign **Critical** when the ticket includes:
+
+- immediate risk of physical harm
+- self-harm or crisis language suggesting urgency
+- threats involving serious violence
+- potential child safety concern
+- suspected grooming or exploitation risk
+- a minor involved in a harmful or suspicious interaction
+
+Critical tickets should never be handled only through automation. They require immediate human review.
+
+### High Severity
+
+Assign **High** when the ticket includes:
+
+- suspected account takeover
+- financial fraud
+- impersonation with harm potential
+- personal data exposure
+- credible threats
+- harmful misinformation with possible real-world consequences
+- suspicious charges linked to account misuse
+- coordinated abuse affecting multiple users
+
+High severity tickets should be reviewed by a trained specialist or escalation team.
+
+### Medium Severity
+
+Assign **Medium** when the ticket includes:
+
+- unclear but plausible harm signal
+- repeated unwanted contact
+- policy confusion with potential user impact
+- privacy concern without clear exposure
+- misinformation with limited immediate harm
+- billing issue with possible but unconfirmed risk
+
+Medium severity tickets should be reviewed within 24 hours.
+
+### Low Severity
+
+Assign **Low** when the ticket includes:
+
+- general policy confusion
+- low-risk user questions
+- no clear harm signal
+- no urgent safety issue
+- simple support or education need
+
+Low severity tickets can usually be handled by standard support workflows.
+
+## Severity Escalation Principles
+
+The following principles should guide reviewer judgement:
+
+1. If there is uncertainty between two severity levels, choose the higher severity.
+2. If the report involves a minor, assign Critical by default.
+3. If the report includes immediate danger, assign Critical.
+4. If the report includes financial loss or suspected fraud, assign at least High.
+5. If the report includes personal data exposure, assign at least Medium and escalate to Privacy Review if evidence is clear.
+6. If a classifier has low confidence, route to human review.
+7. Automation may assist with classification, but severity downgrades should require human review.
+
+## Escalation Teams
+
+| Escalation Team | Handles |
+|---|---|
+| Trust & Safety Review | Harassment, threats, self-harm concerns, abuse reports, general high-risk safety cases |
+| Child Safety Escalation | Any report involving minors or suspected child safety risk |
+| Fraud and Account Integrity | Scams, impersonation, account compromise, suspicious payments, platform manipulation |
+| Privacy Review | Personal data exposure, unauthorised sharing, doxxing concerns, deletion-related risk |
+| Policy Review | Misinformation, policy confusion, unclear moderation decisions, appeals |
+| Support / Education | Low-risk policy questions, basic account guidance, non-urgent user confusion |
+| Human Review Queue | Ambiguous, low-confidence, or multi-risk tickets requiring manual judgement |
+
+## Human Review Requirements
+
+Human review is required when:
+
+- severity is High or Critical
+- the ticket involves a minor
+- the ticket includes self-harm or crisis language
+- the model confidence score is below 0.75
+- the ticket contains multiple risk categories
+- the report is ambiguous but potentially harmful
+- the user is appealing a serious enforcement action
+- the case may require policy interpretation
+- the case involves personal data exposure
+- the model recommendation conflicts with rule-based severity logic
+
+## Example Classification
+
+| User Report | Risk Category | Subcategory | Severity | Escalation Team |
+|---|---|---|---|---|
+| "Someone changed my password and I can't access my account anymore." | Account abuse | unauthorised_login | High | Fraud and Account Integrity |
+| "A person keeps messaging me even after I asked them to stop." | Harassment | repeated_unwanted_contact | Medium | Trust & Safety Review |
+| "This account is asking people to send money outside the platform." | Scam or fraud | off_platform_payment | High | Fraud and Account Integrity |
+| "A user posted my phone number publicly." | Privacy concern | personal_data_exposure | High | Privacy Review |
+| "I don't understand why my post was removed." | Policy confusion | content_removal_question | Low | Support / Education |
+| "I'm worried this adult is contacting my younger sibling." | Child safety concern | minor_contact_concern | Critical | Child Safety Escalation |
+
+## Quality Assurance Checks
+
+Reviewers should check:
+
+- Was the correct primary category selected?
+- Was the subcategory specific enough?
+- Was the severity level appropriate?
+- Was the SLA target correctly assigned?
+- Was the correct escalation team selected?
+- Was human review required and correctly marked?
+- Was the final action consistent with the risk level?
+- Was the case handled within the SLA?
+- Was the classification explainable?
+
+## Taxonomy Maintenance
+
+This taxonomy should be reviewed regularly to ensure it remains useful and accurate.
+
+Recommended review cycle:
+
+| Review Activity | Frequency |
+|---|---|
+| Review misclassified tickets | Weekly |
+| Review unclear or disputed cases | Weekly |
+| Update category examples | Monthly |
+| Review SLA performance by severity | Monthly |
+| Evaluate classifier performance by category | Monthly |
+| Full taxonomy review | Quarterly |
+
+## Success Metrics
+
+The taxonomy can be evaluated using the following metrics:
+
+| Metric | Purpose |
+|---|---|
+| Classification accuracy | Measures whether tickets are assigned to the correct risk category |
+| Severity accuracy | Measures whether the urgency level is correctly assigned |
+| SLA compliance rate | Measures whether tickets are handled within target time |
+| Escalation precision | Measures whether tickets are routed to the correct team |
+| Human review override rate | Measures how often humans disagree with automated classification |
+| Critical case response time | Measures speed of response for the most urgent cases |
+| Ambiguous case rate | Measures how often reports require manual judgement |
+
+## Portfolio Relevance
+
+This taxonomy demonstrates skills relevant to Trust & Safety, AI operations, risk analysis, and data-driven workflow design, including:
+
+- taxonomy design
+- operational risk classification
+- escalation logic
+- SLA design
+- human-in-the-loop review
+- responsible AI safeguards
+- quality assurance thinking
+- structured data preparation
+- analytics-ready workflow design
+
+## Notes
+
+This project is for portfolio and educational purposes only. The dataset, tickets, and examples are synthetic. The taxonomy is designed to demonstrate operational thinking and should not be treated as a real-world safety policy.
