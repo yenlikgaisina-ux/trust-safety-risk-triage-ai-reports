@@ -1,155 +1,428 @@
-# Human-in-the-Loop Process
+# Human-in-the-Loop Review Process
 
-**Project:** Trust & Safety Operations — AI User Report Triage
-**Version:** 1.0
-**Last Updated:** 2026-05-21
-**Owner:** Trust & Safety Operations
+## Project Context
 
----
+This human-in-the-loop review process is part of the portfolio project:
 
-## Overview
+AI Trust & Safety Operations Case Study: Risk Triage, Taxonomy Design and Escalation Workflow
 
-This document defines the structured process by which human analysts are integrated into the AI-assisted Trust & Safety triage pipeline. It specifies the conditions that trigger human review, the responsibilities of analysts at each stage, the handoff procedures between the AI system and human reviewers, and the governance mechanisms that ensure human oversight remains effective and auditable.
+The project uses fully synthetic user reports to demonstrate how AI-assisted triage can support Trust & Safety operations while keeping human judgement central for high-risk, ambiguous, or sensitive cases.
 
-The Human-in-the-Loop (HITL) framework reflects the principle that AI automation augments — but does not replace — human judgment in high-stakes content moderation decisions. Human oversight is mandatory for all cases involving potential serious harm, legal risk, or low model confidence.
+No real users, platforms, accounts, companies, or incidents are used in this project.
 
----
+## Purpose
 
-## 1. Guiding Principles
+The purpose of this document is to define where human judgement is required in an AI-assisted Trust & Safety triage workflow.
 
-**Human accountability:** Every enforcement decision that affects a user's account or removes their content must be attributable to an identified human analyst or, for automated dispositions, must meet strict confidence and safety thresholds defined in the escalation decision tree.
+AI can help organise, classify, summarise, and prioritise reports. However, it should not be the final decision-maker in cases involving safety, privacy, children, fraud, account access, or serious user impact.
 
-**AI as a triage tool:** The AI classifier's role is to pre-screen, prioritize, and surface the most relevant signals to human analysts — not to make final enforcement determinations on cases involving identifiable harm.
+This process is designed to ensure that automation supports reviewers rather than replacing them.
 
-**Override authority:** Human analysts retain unconditional authority to override any AI classification or recommendation. All overrides are logged and subject to QA review, but analysts will not be penalized for exercising professional judgment that is well-documented.
+## Human-in-the-Loop Principles
 
-**Continuous feedback:** Human decisions flow back into model evaluation pipelines. Analyst overrides, QA audit findings, and calibration outcomes are used to assess model performance and identify retraining needs.
+The workflow is based on the following principles:
 
----
-
-## 2. Human Review Triggers
-
-Human review is triggered by any of the following conditions, as defined in the escalation decision tree:
-
-| Trigger | Source | Required Action |
-|---|---|---|
-| Severity Tier T3 or T4 assigned by AI | AI Classifier | Route to Priority or Crisis queue immediately |
-| AI model confidence score < 0.85 on T2 or T3 case | AI Classifier | Route to Human Review queue with LOW_CONFIDENCE_OVERRIDE flag |
-| CSAM/CSEM indicator detected (any tier) | Pre-screener | Route to CSAM Specialist queue — 30-minute response requirement |
-| Reported user has 3+ enforcements in 90 days | Case history lookup | Escalate to T3 regardless of AI tier; route to Priority queue |
-| Trusted reporter or verified organization submitted the report | Reporter metadata | Escalate T1 reports to T2; route to Standard Review queue |
-| T1 AI auto-disposition confidence score < 0.90 | AI Classifier | Route to Human Review queue with T1_CONFIDENCE_INSUFFICIENT flag |
-| Analyst manual escalation from any queue | Human analyst | Route to next tier queue; requires written escalation note |
-| Post-auto-disposition QA sample selection | QA system | Route to QA review; no enforcement change unless defect found |
-
----
-
-## 3. Queue Structure and Analyst Responsibilities
-
-### 3.1 CSAM Specialist Queue
-
-**Staffed by:** Certified CSAM Specialist Analysts (dedicated, not rotational)
-**SLA:** First review within 30 minutes of routing; case closure within 1 hour
-**Minimum analyst level:** CSAM Specialist (requires completion of NCMEC-aligned training and trauma-informed practice certification)
-
-Analyst responsibilities include confirming or denying CSAM/CSEM classification with reference to applicable legal definitions, applying content hash to PhotoDNA-equivalent database for known-content flagging, initiating the law enforcement referral workflow if content is confirmed, documenting all review steps in the case record with timestamps, and immediately notifying the on-call T&S Lead and Legal Counsel upon confirmation.
-
-**Wellness protocols:** CSAM Specialists are limited to a maximum of 4 hours of active CSAM case review per shift. Mandatory wellness check-ins are conducted by the CSAM Specialist Lead after each shift. Trauma support resources are available on demand.
-
----
-
-### 3.2 Crisis Response Queue (T4)
-
-**Staffed by:** Senior Analysts and above (minimum 2 years T&S experience)
-**SLA:** First review within 1 hour; case closure or escalation within 2 hours
-**Minimum analyst level:** Senior Analyst
-
-Analyst responsibilities include confirming or denying T4 classification (the T4 AI signal should be treated as credible until proven otherwise), assessing imminence and specificity of any threat, coordinating with the on-call T&S Lead for decisions involving account termination or law enforcement referral, and documenting decision rationale in real time without deferring case notes. For credible physical threat cases, analysts engage the Law Enforcement Liaison immediately regardless of the account action taken.
-
----
-
-### 3.3 Priority Review Queue (T3)
-
-**Staffed by:** Mid-level Analysts and above
-**SLA:** First review within 4 hours; case closure within 8 hours
-**Minimum analyst level:** Analyst II
-
-Analyst responsibilities include reviewing full content, account history, and prior report signals, applying the relevant policy clause from the enforcement matrix, escalating to T4 or the Crisis queue if review reveals imminent harm not captured by AI, completing all case documentation before moving to the next case, and flagging for QA review if the case involves novel or ambiguous policy application.
-
----
-
-### 3.4 Standard Review Queue (T2)
-
-**Staffed by:** All qualified analysts
-**SLA:** First review within 24 hours; case closure within 48 hours
-**Minimum analyst level:** Analyst I
-
-Analyst responsibilities include reviewing reported content and account context, applying the enforcement matrix to determine the appropriate action, escalating to the Priority queue if review reveals T3-level signals not detected by AI, and completing case documentation including outcome code and routing reason code.
-
----
-
-### 3.5 Human Review Queue (AI Confidence Override)
-
-**Staffed by:** All qualified analysts
-**SLA:** Inherits SLA of the report's assigned tier (T1: 72h, T2: 24h, T3: 4h)
-**Minimum analyst level:** Analyst I
-
-Analyst responsibilities include reviewing the AI classification and confidence score flag, validating or overriding the AI tier assignment, noting agreement or providing written justification for any override referencing specific policy criteria, and closing the case or re-routing per the updated classification.
-
----
-
-## 4. Handoff Procedures
-
-### 4.1 AI to Human Handoff
-
-When the AI system routes a case to a human queue, the following information is pre-populated in the case management system for the receiving analyst: report content (verbatim or reference link), AI-assigned risk category and sub-category, AI-assigned severity tier, AI model confidence score, routing reason code, reporter metadata (account age, prior report history, trusted reporter flag), reported user metadata (account age, prior enforcement history, watch list status), timestamp of report submission and queue entry, and any active flags such as CSAM signal, LOW_CONFIDENCE_OVERRIDE, or REPEAT_OFFENDER.
-
-Analysts must not begin case review until all pre-populated fields are present. If any field is missing, the analyst must flag the case with INTAKE_INCOMPLETE and notify the queue supervisor.
-
----
-
-### 4.2 Human to Human Handoff (Escalation)
-
-When an analyst escalates a case to a higher-tier queue, the following must be completed before transfer: update the severity tier in the case management system, add a written escalation note documenting the specific signals that triggered escalation, select the appropriate escalation reason code from the controlled list, notify the receiving queue's Tier Lead via the case management system notification function, and retain the original case ID with a sub-ID suffix on the escalated case.
-
----
-
-### 4.3 Human to Automated Handoff (Downgrade to T1 Auto-Disposition)
-
-If a human analyst determines that a case was incorrectly elevated and meets T1 auto-disposition criteria, a downgrade is permitted with written justification referencing the AI confidence score and specific policy criteria. Tier Lead approval is required for any downgrade from T3 or higher. Downgraded cases are logged as ANALYST_DOWNGRADE and automatically added to the weekly QA sample.
-
----
-
-## 5. Analyst Training and Certification Requirements
-
-| Queue | Required Training | Recertification |
-|---|---|---|
-| All queues | Platform policy fundamentals, case management system, unconscious bias in content moderation | Annual |
-| Standard Review (T2) | Enforcement matrix, T2 policy deep-dives, QA defect code review | Semi-annual |
-| Priority Review (T3) | Crisis escalation protocols, threat assessment fundamentals, legal referral procedures | Semi-annual |
-| Crisis Response (T4) | Advanced threat assessment, law enforcement liaison procedures, incident response communications | Quarterly |
-| CSAM Specialist | NCMEC-aligned CSAM identification training, trauma-informed practice, legal reporting obligations | Quarterly + annual recertification |
-
-New analysts may not independently review T3 or higher cases until they have completed a minimum of 90 days on lower-tier queues and passed a calibration assessment with a score of 85% or higher.
-
----
-
-## 6. Oversight and Accountability
-
-Tier Leads monitor queue health including case volume, SLA compliance, and escalation rates in real time via the operations dashboard. The QA Lead conducts weekly random-sample audits per the QA Checklist and reports defect rates to the Head of Trust & Safety. The Head of Trust & Safety receives a weekly operations summary covering SLA performance, escalation volume, AI override rates, and any critical defects.
-
-Human analyst decisions are fed into the AI model evaluation pipeline on a weekly basis. Key signals monitored include analyst override rate per risk category, false negative rate for cases auto-closed at T1 that are subsequently re-reported at T3+, and precision and recall per taxonomy sub-category. Significant degradation in model performance triggers a formal model review.
-
-Every case in the case management system maintains a full, immutable audit trail including all AI classifications and confidence scores, all human review actions with analyst ID and timestamp, all escalations and overrides with justification notes, and all QA review findings. Audit trails are retained for a minimum of 3 years per data retention policy.
-
----
-
-## Cross-Reference
-
-| Document | Purpose |
+| Principle | Meaning |
 |---|---|
-| `docs/risk_taxonomy.md` | Category and severity tier definitions used in queue routing |
-| `docs/escalation_decision_tree.md` | Automated routing logic that precedes human handoff |
-| `docs/qa_checklist.md` | Quality assurance criteria applied during human review |
-| `docs/responsible_ai_safeguards.md` | AI model governance, confidence thresholds, and bias monitoring |
-| `docs/data_dictionary.md` | Field definitions for all case management system fields referenced here |
+| Human oversight | Humans remain responsible for high-risk and sensitive decisions. |
+| Automation assistance | AI can help classify, summarise, and prioritise tickets. |
+| Escalation by risk | Higher-risk tickets receive faster and more specialist review. |
+| Explainability | Reviewers should understand why a ticket was classified or escalated. |
+| Safety first | Ambiguous cases should be treated cautiously. |
+| Auditability | Decisions, overrides, and final actions should be recorded. |
+| Continuous improvement | Human feedback should improve taxonomy, QA, and model performance. |
+
+## Workflow Overview
+
+The human-in-the-loop process has six stages:
+
+1. Ticket intake
+2. Automated pre-classification
+3. Risk and confidence checks
+4. Human review and escalation
+5. Final action
+6. QA and feedback loop
+
+## Stage 1: Ticket Intake
+
+At intake, the system receives a synthetic user report and records structured metadata.
+
+Example intake fields:
+
+| Field | Description |
+|---|---|
+| ticket_id | Unique ticket identifier |
+| created_at | Date and time the ticket was created |
+| user_report | Free-text user report |
+| channel | Source channel, such as web form, app, email, or support chat |
+| region | Synthetic user region |
+| language | Ticket language |
+| initial_status | New, pending review, escalated, or closed |
+
+The report should not be actioned at this stage. It first needs classification and risk assessment.
+
+## Stage 2: Automated Pre-Classification
+
+The automated system can support triage by generating an initial prediction.
+
+Possible automated outputs:
+
+| Output | Purpose |
+|---|---|
+| predicted_risk_category | Suggested primary risk category |
+| predicted_subcategory | Suggested more specific risk type |
+| predicted_severity | Suggested urgency level |
+| model_confidence | Confidence score for the prediction |
+| suggested_escalation_team | Recommended team for routing |
+| suggested_sla_target | Recommended SLA target |
+| suggested_summary | Short summary of the user report |
+| human_review_required | Initial flag based on severity, confidence, and risk rules |
+
+The automated prediction is not treated as final. It is an input for review.
+
+## Stage 3: Risk and Confidence Checks
+
+Before deciding whether a ticket can follow a standard path, the workflow checks for high-risk signals and model uncertainty.
+
+Human review is required when any of the following conditions are met:
+
+| Condition | Reason |
+|---|---|
+| Severity is Critical | Immediate or severe safety risk requires human judgement. |
+| Severity is High | Significant user harm or operational risk may be present. |
+| A minor may be involved | Child safety cases require specialist review. |
+| Self-harm or crisis language appears | Sensitive safety risk requires human review. |
+| Fraud or scam is suspected | Financial harm and account abuse require specialist review. |
+| Personal data exposure is reported | Privacy risk requires careful handling. |
+| Credible threat is reported | Threats require contextual judgement. |
+| Model confidence is below 0.75 | Low confidence indicates uncertainty. |
+| The ticket has multiple possible risk categories | Multi-risk cases need human prioritisation. |
+| The report is ambiguous | Unclear evidence should not be fully automated. |
+| The user is appealing a serious decision | Appeals require fairness and context. |
+| The final action could affect user access or safety | High-impact outcomes require oversight. |
+
+## Stage 4: Human Review
+
+When human review is required, a trained reviewer examines the ticket and confirms or changes the automated recommendation.
+
+The reviewer should assess:
+
+| Review Area | Reviewer Question |
+|---|---|
+| Category | Does the predicted category match the main risk signal? |
+| Subcategory | Is the subcategory specific and accurate? |
+| Severity | Is the urgency level appropriate? |
+| Escalation team | Is the ticket routed to the right team? |
+| SLA | Is the response target correct? |
+| Evidence | Is there enough information to support the decision? |
+| User impact | Could the outcome significantly affect the user? |
+| Safety impact | Could delay or error increase harm? |
+| Privacy impact | Does the ticket involve personal or sensitive information? |
+| Final action | What is the safest and most proportionate next step? |
+
+## Reviewer Decision Options
+
+The human reviewer can take one of several actions.
+
+| Reviewer Decision | Description |
+|---|---|
+| Confirm prediction | Reviewer agrees with the automated classification and routing. |
+| Change category | Reviewer assigns a different risk category. |
+| Change severity | Reviewer increases or decreases urgency. |
+| Change escalation team | Reviewer routes to a different team. |
+| Request more information | Ticket cannot be resolved without more detail. |
+| Escalate to specialist | Ticket requires expert review. |
+| Mark as no action | No policy, safety, or operational issue is identified. |
+| Close with user education | User receives explanation or guidance. |
+| Flag for QA | Ticket should be reviewed for quality or process learning. |
+
+Severity downgrades should be handled carefully. Critical and High severity cases should not be downgraded without a documented human rationale.
+
+## Stage 5: Specialist Escalation
+
+Some tickets require specialist review beyond the first human reviewer.
+
+| Escalation Path | Example Cases |
+|---|---|
+| Trust & Safety Specialist | Self-harm concern, threats, severe harassment |
+| Child Safety Escalation | Any report involving possible risk to a minor |
+| Fraud and Account Integrity | Scam, impersonation, suspicious payment, account takeover |
+| Privacy Review | Personal data exposure, doxxing, unauthorised sharing |
+| Policy Review | Misinformation, appeals, unclear moderation decisions |
+| Support / Education | Low-risk policy explanation or user guidance |
+| Human Review Queue | Ambiguous or low-confidence cases |
+
+Specialist escalation should preserve the ticket history, model prediction, reviewer notes, and reason for escalation.
+
+## Stage 6: Final Action
+
+After review, the ticket receives a final action.
+
+| Final Action | Description |
+|---|---|
+| No action | No issue found after review. |
+| User education | User receives guidance or policy explanation. |
+| Content review | Reported content is sent for moderation review. |
+| Account security review | Suspicious login or account compromise is investigated. |
+| Fraud investigation | Scam or payment risk is reviewed. |
+| Privacy escalation | Personal data exposure is escalated. |
+| Safety escalation | Urgent safety risk is escalated. |
+| Child safety escalation | Minor-related concern is sent to specialist review. |
+| Policy review | Unclear policy issue is sent to policy specialists. |
+| Human review completed | Manual review confirms the outcome. |
+
+Every final action should be documented clearly enough for QA review.
+
+## Human Override Process
+
+A human override occurs when the reviewer changes the automated recommendation.
+
+Examples of overrides:
+
+| Model Prediction | Human Decision | Reason |
+|---|---|---|
+| Policy confusion / Low | Privacy concern / High | Report contained personal data exposure. |
+| Harassment / Medium | Threat / High | Reviewer identified credible threat language. |
+| Account abuse / Medium | Fraud / High | Report included suspicious payment request. |
+| Low risk / Low | Child safety concern / Critical | Reviewer identified possible minor involvement. |
+| Scam or fraud / High | Policy confusion / Low | Report was actually asking about a moderation decision. |
+
+Overrides should be recorded because they are valuable for model improvement and QA analysis.
+
+## Override Documentation Template
+
+Use this template when a reviewer changes an automated decision.
+
+```text
+Ticket ID:
+Reviewer:
+Review date:
+
+Original model category:
+Final human category:
+
+Original model severity:
+Final human severity:
+
+Original escalation team:
+Final escalation team:
+
+Reason for override:
+Evidence considered:
+Final action:
+QA flag required? Yes / No
+```
+
+## Confidence Thresholds
+
+Model confidence should be used as a routing signal, not as proof that the model is correct.
+
+| Confidence Score | Recommended Action |
+|---:|---|
+| 0.90 to 1.00 | Can proceed if severity is Low or Medium and no sensitive risk is detected. |
+| 0.75 to 0.89 | Can proceed for low-risk cases, but review if risk signals appear. |
+| 0.50 to 0.74 | Human review required. |
+| Below 0.50 | Human review required and model output should be treated as unreliable. |
+
+Important rule:
+
+High model confidence should never bypass mandatory human review for High, Critical, child safety, self-harm, fraud, privacy exposure, or serious enforcement cases.
+
+## Human Review Queue Prioritisation
+
+The human review queue should be ordered by severity and SLA.
+
+| Priority | Ticket Type | SLA |
+|---:|---|---:|
+| 1 | Critical safety or child safety cases | 1 hour |
+| 2 | High severity fraud, privacy, threats, account compromise | 4 hours |
+| 3 | Medium severity harassment, misinformation, unclear policy impact | 24 hours |
+| 4 | Low-confidence but low-risk tickets | 24 to 72 hours |
+| 5 | Low-risk policy questions | 72 hours |
+
+If two tickets have the same severity, the older ticket should usually be reviewed first.
+
+## Reviewer Notes Standards
+
+Reviewer notes should be:
+
+- clear
+- concise
+- evidence-based
+- respectful
+- free from unnecessary personal judgement
+- specific enough for audit
+- useful for future QA review
+
+Good reviewer note example:
+
+```text
+User report describes unauthorised password change and loss of account access. Classified as Account abuse / unauthorised_login. Severity set to High because account takeover is suspected. Routed to Fraud and Account Integrity with 4-hour SLA.
+```
+
+Weak reviewer note example:
+
+```text
+Seems bad. Escalated.
+```
+
+## Human-in-the-Loop Controls
+
+The workflow uses several controls to reduce automation risk.
+
+| Control | Purpose |
+|---|---|
+| Mandatory review for High and Critical cases | Prevents high-risk automation-only decisions. |
+| Low-confidence review threshold | Captures uncertain model outputs. |
+| Human override logging | Tracks where humans disagree with AI. |
+| Severity floor rules | Prevents risky cases being downgraded too easily. |
+| Specialist escalation paths | Sends sensitive cases to trained teams. |
+| QA sampling | Detects recurring decision errors. |
+| SLA monitoring | Ensures urgent cases are handled quickly. |
+| Reviewer notes | Supports auditability and learning. |
+
+## Feedback Loop
+
+Human review should improve the system over time.
+
+Feedback should be used to update:
+
+| Area | Example Improvement |
+|---|---|
+| Taxonomy | Add clearer examples for confusing categories. |
+| Escalation rules | Adjust routing when cases are repeatedly misrouted. |
+| Model training data | Use corrected labels to improve classification. |
+| QA checklist | Add new error types or review questions. |
+| Reviewer guidance | Clarify policy interpretation or severity rules. |
+| Dashboard metrics | Track new quality or risk indicators. |
+| SLA design | Adjust targets if operational evidence shows mismatch. |
+
+## Continuous Improvement Cycle
+
+Recommended cycle:
+
+1. Collect model predictions and human decisions.
+2. Identify human overrides.
+3. Review false positives and false negatives.
+4. Analyse SLA breaches and escalation errors.
+5. Update taxonomy and decision tree.
+6. Improve training data and model features.
+7. Re-test classifier performance.
+8. Update reviewer guidance.
+9. Monitor whether error rates improve.
+
+## Example Human-in-the-Loop Flow
+
+```text
+1. User submits report:
+   "Someone is pretending to be me and asking others for money."
+
+2. Model prediction:
+   Risk category: Scam or fraud
+   Subcategory: impersonation
+   Severity: High
+   Confidence: 0.88
+   Escalation team: Fraud and Account Integrity
+   Human review required: Yes
+
+3. Human reviewer checks:
+   - impersonation signal is present
+   - financial harm signal is present
+   - High severity is appropriate
+   - Fraud and Account Integrity is correct
+
+4. Reviewer confirms prediction.
+
+5. Final action:
+   Fraud investigation opened.
+   User receives account safety guidance.
+   Ticket is marked for QA sample because it is High severity.
+```
+
+## Example Override Flow
+
+```text
+1. User submits report:
+   "I don't know why my post was removed, but it included my phone number and now people are contacting me."
+
+2. Model prediction:
+   Risk category: Policy confusion
+   Severity: Low
+   Confidence: 0.81
+
+3. Human reviewer identifies:
+   - personal data exposure
+   - possible privacy risk
+   - user impact beyond policy confusion
+
+4. Human override:
+   Risk category changed to Privacy concern
+   Subcategory changed to personal_data_exposure
+   Severity changed to High
+   Escalation team changed to Privacy Review
+   SLA changed to 4 hours
+
+5. Final action:
+   Privacy escalation opened.
+   Ticket added to QA review because of model under-classification.
+```
+
+## Human Review Metrics
+
+The following metrics help evaluate the effectiveness of the human-in-the-loop process.
+
+| Metric | Definition | Why It Matters |
+|---|---|---|
+| Human review rate | Percentage of tickets reviewed by humans. | Shows how much automation relies on oversight. |
+| Override rate | Percentage of model predictions changed by humans. | Measures model alignment with reviewer judgement. |
+| Critical override rate | Percentage of serious model errors corrected by humans. | Measures safety value of human review. |
+| Low-confidence review rate | Percentage of low-confidence cases reviewed. | Confirms uncertainty controls are working. |
+| SLA compliance for reviewed cases | Percentage of human-reviewed tickets handled within SLA. | Measures operational responsiveness. |
+| Escalation accuracy after review | Percentage routed correctly after human review. | Measures human review quality. |
+| QA pass rate | Percentage of reviewed tickets passing QA. | Measures reviewer consistency. |
+| Repeat error rate | Recurring error patterns found in QA. | Identifies process improvement opportunities. |
+
+## Risks of Over-Automation
+
+This workflow is designed to avoid the following risks:
+
+| Risk | Example | Mitigation |
+|---|---|---|
+| Under-escalation | Model marks self-harm concern as Low. | Mandatory review for safety keywords and low confidence. |
+| Over-escalation | Model routes simple policy questions to urgent queue. | QA sampling and reviewer correction. |
+| False confidence | High confidence prediction is wrong. | Mandatory human review for sensitive categories. |
+| Missing context | Model focuses on keywords but misses meaning. | Human judgement for ambiguous cases. |
+| Inconsistent decisions | Reviewers interpret categories differently. | Taxonomy, QA checklist, and reviewer guidance. |
+| Unclear accountability | Nobody owns the final decision. | Human reviewer records final action and rationale. |
+
+## Ethical and Responsible AI Considerations
+
+The human-in-the-loop process supports responsible AI by ensuring:
+
+- AI is used as an assistant, not the final authority for high-impact decisions
+- sensitive cases receive human judgement
+- users are not affected only by opaque automated predictions
+- model uncertainty is treated cautiously
+- decisions can be reviewed and explained
+- human overrides are captured and used for improvement
+- safety-critical false negatives are monitored closely
+- synthetic data is clearly separated from real user data
+
+## Portfolio Relevance
+
+This document demonstrates practical understanding of:
+
+- human-in-the-loop AI design
+- Trust & Safety operations
+- AI-assisted risk triage
+- escalation governance
+- reviewer workflow design
+- model confidence thresholds
+- override handling
+- quality assurance feedback loops
+- responsible AI safeguards
+- operational risk management
+
+## Notes
+
+This document is designed for portfolio and educational purposes only. It is not a real-world safety policy, legal process, or production Trust & Safety workflow. A production version would require expert policy review, legal input, privacy assessment, specialist safety expertise, and ongoing monitoring.
